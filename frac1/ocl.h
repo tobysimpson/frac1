@@ -54,7 +54,7 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     ocl->err            = clGetPlatformIDs(1, &ocl->platform_id, &ocl->num_platforms);                                              //platform
-    ocl->err            = clGetDeviceIDs(ocl->platform_id, CL_DEVICE_TYPE_CPU, 1, &ocl->device_id, &ocl->num_devices);              //devices
+    ocl->err            = clGetDeviceIDs(ocl->platform_id, CL_DEVICE_TYPE_GPU, 1, &ocl->device_id, &ocl->num_devices);              //devices
     ocl->context        = clCreateContext(NULL, ocl->num_devices, &ocl->device_id, NULL, NULL, &ocl->err);                          //context
     ocl->command_queue  = clCreateCommandQueue(ocl->context, ocl->device_id, 0, &ocl->err);                                         //command queue
     ocl->err            = clGetDeviceInfo(ocl->device_id, CL_DEVICE_NAME, sizeof(ocl->device_str), &ocl->device_str, NULL);         //device info

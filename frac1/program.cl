@@ -42,29 +42,29 @@ kernel void vtx_init(constant   float4  *buf_cc,
     vtx_ff[vtx_idx] = 4*vtx_idx + (float4){0e0f,1e0f,2e0f,3e0f};
     
     
-//    int coo_idx = 27*16*vtx_idx;
-    
-//    //blk
-//    for(int i=0; i<27; i++)
-//    {
-//
-//
-//        //blk row
-//        for(int i=0; i<4; i++)
-//        {
-//            //blk_col
-//            for(int i=0; i<4; i++)
-//            {
-//
-//            }
-//        }
-//    }
-  
+
+//blk
+for(int k=0; k<27; k++)
+{
+    //blk row
+    for(int j=0; j<4; j++)
+    {
+        //blk col
+        for(int i=0; i<4; i++)
+        {
+            int coo_idx = 27*16*vtx_idx + k*16 + j*4 + i;
+            
+            printf("coo_idx %d\n", coo_idx);
+        }
+    }
+}
+
+
     
     return;
 }
 
-
+//interior
 kernel void vtx_assm(constant   float4  *buf_cc,
                      global     float4  *vtx_xx,
                      global     float4  *vtx_uu,
@@ -73,11 +73,12 @@ kernel void vtx_assm(constant   float4  *buf_cc,
                      global     int4    *coo_jj,
                      global     float4  *coo_aa)
 {
-    const int3 vtx_dim = (int3){get_global_size(0),get_global_size(1),get_global_size(2)};
-    const int3 vtx_pos = (int3){get_global_id(0),get_global_id(1),get_global_id(2)} + 1;    //int
+    const int3 vtx_dim = (int3){get_global_size(0),get_global_size(1),get_global_size(2)}   + 2;
+    const int3 vtx_pos = (int3){get_global_id(0),get_global_id(1),get_global_id(2)}         + 1;    //int
     
     int vtx_idx = fn_idx(vtx_pos, vtx_dim);
     
+    printf("vtx_idx %d\n", vtx_idx);
     printf("vtx [%v3d]\n", vtx_pos);
     
     //ele
