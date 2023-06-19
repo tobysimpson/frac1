@@ -11,11 +11,7 @@
 
 #include "msh.h"
 #include "ocl.h"
-
-
-//constants
-#define ROOT_SRC    "/Users/toby/Documents/USI/postdoc/fracture/xcode/frac1/frac1/"
-#define ROOT_WRITE  "/Users/toby/Downloads/"
+#include "mtx.h"
 
 
 //here
@@ -40,52 +36,28 @@ int main(int argc, const char * argv[])
      */
     
     struct msh_obj msh = {{ne,ne,ne}, {xmin,xmin,xmin}, {xmax,xmax,xmax}};   //ne,xmin,xmax
+    struct ocl_obj ocl;
     
     msh_init(&msh);
+    ocl_init(&msh, &ocl);
     
     /*
      ===============
-     ass
+     calc
      ===============
      */
     
-    char prg_pth[1000];
-    sprintf(prg_pth,"%s/%s", ROOT_SRC, "program.cl");
+    //init
+    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_init, 3, NULL, msh.nv, NULL, 0, NULL, NULL);
     
+
     
-    //source
-    FILE* prg_file = fopen(prg_pth, "r");
-    if(prg_file)
-    {
-        printf("yes\n");
-        fclose(prg_file);
-    }
-    else
-    {
-        printf("no\n");
-    }
+    //write
+    mtx_coo(&msh, &ocl);
+    mtx_vtk(&msh, &ocl);
     
-    /*
-     ===============
-     solve
-     ===============
-     */
-    
-    
-    
-    /*
-     ===============
-     write
-     ===============
-     */
-    
-    
-    
-    /*
-     ===============
-     clean
-     ===============
-     */
+    //clean
+    ocl_final(&ocl);
     
     printf("done\n");
     
