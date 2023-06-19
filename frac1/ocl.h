@@ -54,7 +54,7 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     ocl->err            = clGetPlatformIDs(1, &ocl->platform_id, &ocl->num_platforms);                                              //platform
-    ocl->err            = clGetDeviceIDs(ocl->platform_id, CL_DEVICE_TYPE_GPU, 1, &ocl->device_id, &ocl->num_devices);              //devices
+    ocl->err            = clGetDeviceIDs(ocl->platform_id, CL_DEVICE_TYPE_CPU, 1, &ocl->device_id, &ocl->num_devices);              //devices
     ocl->context        = clCreateContext(NULL, ocl->num_devices, &ocl->device_id, NULL, NULL, &ocl->err);                          //context
     ocl->command_queue  = clCreateCommandQueue(ocl->context, ocl->device_id, 0, &ocl->err);                                         //command queue
     ocl->err            = clGetDeviceInfo(ocl->device_id, CL_DEVICE_NAME, sizeof(ocl->device_str), &ocl->device_str, NULL);         //device info
@@ -172,6 +172,14 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
     ocl->err = clSetKernelArg(ocl->vtx_init, 5, sizeof(cl_mem), (void*)&ocl->coo_jj);
     ocl->err = clSetKernelArg(ocl->vtx_init, 6, sizeof(cl_mem), (void*)&ocl->coo_aa);
     
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 0, sizeof(cl_mem), (void*)&ocl->buf_cc);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 1, sizeof(cl_mem), (void*)&ocl->vtx_xx);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 2, sizeof(cl_mem), (void*)&ocl->vtx_uu);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 3, sizeof(cl_mem), (void*)&ocl->vtx_ff);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 4, sizeof(cl_mem), (void*)&ocl->coo_ii);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 5, sizeof(cl_mem), (void*)&ocl->coo_jj);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 6, sizeof(cl_mem), (void*)&ocl->coo_aa);
+    
     
 }
 
@@ -184,6 +192,7 @@ void ocl_final(struct ocl_obj *ocl)
     
     //kernels
     ocl->err = clReleaseKernel(ocl->vtx_init);
+    ocl->err = clReleaseKernel(ocl->vtx_assm);
 
     //memory
     ocl->err = clReleaseMemObject(ocl->buf_cc);
@@ -194,8 +203,6 @@ void ocl_final(struct ocl_obj *ocl)
     ocl->err = clReleaseMemObject(ocl->coo_ii);
     ocl->err = clReleaseMemObject(ocl->coo_jj);
     ocl->err = clReleaseMemObject(ocl->coo_aa);
-    
-
 
     ocl->err = clReleaseProgram(ocl->program);
     ocl->err = clReleaseCommandQueue(ocl->command_queue);

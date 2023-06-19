@@ -74,40 +74,40 @@ kernel void vtx_assm(constant   float4  *buf_cc,
                      global     float4  *coo_aa)
 {
     const int3 vtx_dim = (int3){get_global_size(0),get_global_size(1),get_global_size(2)};
-    const int3 vtx_pos = (int3){get_global_id(0),get_global_id(1),get_global_id(2)};
+    const int3 vtx_pos = (int3){get_global_id(0),get_global_id(1),get_global_id(2)} + 1;    //int
     
     int vtx_idx = fn_idx(vtx_pos, vtx_dim);
     
     printf("vtx [%v3d]\n", vtx_pos);
     
-//    //ele
-//    for(int ek=0; ek<2; ek++)
-//    {
-//        for(int ej=0; ej<2; ej++)
-//        {
-//            for(int ei=0; ei<2; ei++)
-//            {
-//                int3 ele_pos = vtx_pos + (int3){ei,ej,ek} - 1;
-//
-//                printf("ele [%v3d]\n", ele_pos);
-//
-//                //vtx
-//                for(int vk=0; vk<2; vk++)
-//                {
-//                    for(int vj=0; vj<2; vj++)
-//                    {
-//                        for(int vi=0; vi<2; vi++)
-//                        {
-//                            int3 adj_pos = ele_pos + (int3){vi,vj,vk};
-//
-//                            printf("adj [%v3d]\n", adj_pos);
-//                        }
-//                    }
-//                }
-//
-//            }
-//        }
-//    }
+    //ele
+    for(int ek=0; ek<2; ek++)
+    {
+        for(int ej=0; ej<2; ej++)
+        {
+            for(int ei=0; ei<2; ei++)
+            {
+                int3 ele_pos = vtx_pos + (int3){ei,ej,ek} - (int3)1;
+
+                printf("ele [%v3d]\n", ele_pos);
+
+                //vtx
+                for(int vk=0; vk<2; vk++)
+                {
+                    for(int vj=0; vj<2; vj++)
+                    {
+                        for(int vi=0; vi<2; vi++)
+                        {
+                            int3 adj_pos = ele_pos + (int3){vi,vj,vk};
+
+                            printf("adj [%v3d]\n", adj_pos);
+                        }
+                    }
+                }
+
+            }
+        }
+    }
 
     return;
 }

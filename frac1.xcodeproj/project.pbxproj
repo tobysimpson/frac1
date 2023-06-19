@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		DA653A252A40528B0025D507 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = DA653A242A40528B0025D507 /* main.c */; };
-		DA653A2F2A4066AD0025D507 /* program.cl in Sources */ = {isa = PBXBuildFile; fileRef = DA653A2B2A4056450025D507 /* program.cl */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -129,7 +128,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				DA653A252A40528B0025D507 /* main.c in Sources */,
-				DA653A2F2A4066AD0025D507 /* program.cl in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

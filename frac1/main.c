@@ -20,7 +20,7 @@ int main(int argc, const char * argv[])
     printf("hello\n");
     
     //params
-    size_t  ne = 4;
+    size_t  ne = 2;
     float   x0 = 0e0;
     float   x1 = ne;
     
@@ -37,8 +37,8 @@ int main(int argc, const char * argv[])
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, msh.iv, NULL, 0, NULL, NULL);
     
     //write
-    wrt_coo(&msh, &ocl);
-    wrt_vtk(&msh, &ocl);
+//    wrt_coo(&msh, &ocl);
+//    wrt_vtk(&msh, &ocl);
     
     //clean
     ocl_final(&ocl);
