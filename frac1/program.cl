@@ -23,7 +23,7 @@ kernel void vtx_init(constant   float4  *buf_cc,
                      global     float4  *vtx_uu,
                      global     int     *mtx_ii,
                      global     int     *mtx_jj,
-                     global     float   *mtx_kk,
+                     global     float   *mtx_aa,
                      global     float   *mtx_ff)
 {
     const int3 vtx_dim = (int3){get_global_size(0),get_global_size(1),get_global_size(2)};
@@ -31,7 +31,7 @@ kernel void vtx_init(constant   float4  *buf_cc,
 
     int vtx_idx = fn_idx(vtx_pos, vtx_dim);
     
-//    printf("vtx [%v3d] [%v3d]\n", vtx_pos, vtx_dim);
+//    printf("vtx [%v3d]\n", vtx_pos);
     
     float3 x = buf_cc[0].xyz + convert_float3(vtx_pos)*buf_cc[2].xyz;
     
@@ -48,7 +48,7 @@ kernel void vtx_init(constant   float4  *buf_cc,
         
         mtx_ii[coo_idx] = vtx_idx;
         mtx_jj[coo_idx] = 0e0f;
-        mtx_kk[coo_idx] = 0e0f;
+        mtx_aa[coo_idx] = 0e0f;
     }
     
     mtx_ff[vtx_idx] = 0e0f;
@@ -59,7 +59,7 @@ kernel void vtx_init(constant   float4  *buf_cc,
         int coo_idx = 27*vtx_idx + 13;
 
         mtx_jj[coo_idx] = vtx_idx;
-        mtx_kk[coo_idx] = 1e0f;
+        mtx_aa[coo_idx] = 1e0f;
     }
     
     return;

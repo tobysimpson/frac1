@@ -34,7 +34,7 @@ void mtx_coo(struct msh_obj *msh, struct ocl_obj *ocl)
 
     sprintf(file1_name, "%s%s.raw", ROOT_WRITE, "coo_ii");
     sprintf(file2_name, "%s%s.raw", ROOT_WRITE, "coo_jj");
-    sprintf(file3_name, "%s%s.raw", ROOT_WRITE, "coo_kk");
+    sprintf(file3_name, "%s%s.raw", ROOT_WRITE, "coo_aa");
     sprintf(file4_name, "%s%s.raw", ROOT_WRITE, "coo_ff");
 
     //open
@@ -46,7 +46,7 @@ void mtx_coo(struct msh_obj *msh, struct ocl_obj *ocl)
     //map
     ptr1 = clEnqueueMapBuffer(ocl->command_queue, ocl->mtx_ii, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(int)  , 0, NULL, NULL, &ocl->err);
     ptr2 = clEnqueueMapBuffer(ocl->command_queue, ocl->mtx_jj, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(int)  , 0, NULL, NULL, &ocl->err);
-    ptr3 = clEnqueueMapBuffer(ocl->command_queue, ocl->mtx_vv, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+    ptr3 = clEnqueueMapBuffer(ocl->command_queue, ocl->mtx_aa, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
     ptr4 = clEnqueueMapBuffer(ocl->command_queue, ocl->mtx_ff, CL_TRUE, CL_MAP_READ, 0,    msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
     
 //    for(int i=0; i<msh->nv_tot; i++)
@@ -63,7 +63,7 @@ void mtx_coo(struct msh_obj *msh, struct ocl_obj *ocl)
     //unmap
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->mtx_ii, ptr1, 0, NULL, NULL);
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->mtx_jj, ptr2, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->mtx_vv, ptr3, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->mtx_aa, ptr3, 0, NULL, NULL);
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->mtx_ff, ptr4, 0, NULL, NULL);
     
     //close
