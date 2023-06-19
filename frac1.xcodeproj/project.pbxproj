@@ -29,7 +29,7 @@
 		DA653A2B2A4056450025D507 /* program.cl */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.opencl; path = program.cl; sourceTree = "<group>"; };
 		DA653A2D2A405CE80025D507 /* msh.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msh.h; sourceTree = "<group>"; };
 		DA653A2E2A405D5D0025D507 /* ocl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ocl.h; sourceTree = "<group>"; };
-		DA653A302A406C480025D507 /* mtx.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mtx.h; sourceTree = "<group>"; };
+		DA653A302A406C480025D507 /* wrt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = wrt.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,7 +64,7 @@
 			children = (
 				DA653A2D2A405CE80025D507 /* msh.h */,
 				DA653A2E2A405D5D0025D507 /* ocl.h */,
-				DA653A302A406C480025D507 /* mtx.h */,
+				DA653A302A406C480025D507 /* wrt.h */,
 				DA653A242A40528B0025D507 /* main.c */,
 				DA653A2B2A4056450025D507 /* program.cl */,
 			);

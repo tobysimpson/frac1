@@ -11,7 +11,7 @@
 
 #include "msh.h"
 #include "ocl.h"
-#include "mtx.h"
+#include "wrt.h"
 
 
 //here
@@ -19,42 +19,26 @@ int main(int argc, const char * argv[])
 {
     printf("hello\n");
     
-    /*
-     ===============
-     params
-     ===============
-     */
+    //params
+    size_t  ne = 4;
+    float   x0 = 0e0;
+    float   x1 = ne;
     
-    size_t  ne   = 4;
-    float   xmin = -1e0f;
-    float   xmax = +1e0f;
-    
-    /*
-     ===============
-     init
-     ===============
-     */
-    
-    struct msh_obj msh = {{ne,ne,ne}, {xmin,xmin,xmin}, {xmax,xmax,xmax}};   //ne,xmin,xmax
+    //objects
+    struct msh_obj msh = {{ne,ne,ne}, {x0,x0,x0}, {x1,x1,x1}};   //ne,x0,x1
     struct ocl_obj ocl;
     
+    //init
     msh_init(&msh);
     ocl_init(&msh, &ocl);
     
-    /*
-     ===============
-     calc
-     ===============
-     */
-    
-    //init
+    //calc
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_init, 3, NULL, msh.nv, NULL, 0, NULL, NULL);
-    
-
+    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, msh.iv, NULL, 0, NULL, NULL);
     
     //write
-    mtx_coo(&msh, &ocl);
-    mtx_vtk(&msh, &ocl);
+    wrt_coo(&msh, &ocl);
+    wrt_vtk(&msh, &ocl);
     
     //clean
     ocl_final(&ocl);

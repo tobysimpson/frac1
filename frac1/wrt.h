@@ -1,83 +1,86 @@
 //
-//  mtx.h
+//  coo.h
 //  frac1
 //
 //  Created by Toby Simpson on 19.06.23.
 //
 
-#ifndef mtx_h
-#define mtx_h
+#ifndef coo_h
+#define coo_h
 
 #define ROOT_WRITE  "/Users/toby/Downloads/"
 
 //write
-void mtx_coo(struct msh_obj *msh, struct ocl_obj *ocl)
+void wrt_coo(struct msh_obj *msh, struct ocl_obj *ocl)
 {
     //ptr
     void *ptr1;
     void *ptr2;
     void *ptr3;
     void *ptr4;
+    void *ptr5;
     
     //file
     FILE* file1;
     FILE* file2;
     FILE* file3;
     FILE* file4;
+    FILE* file5;
     
     //name
     char file1_name[250];
     char file2_name[250];
     char file3_name[250];
     char file4_name[250];
+    char file5_name[250];
 
-
-    sprintf(file1_name, "%s%s.raw", ROOT_WRITE, "coo_ii");
-    sprintf(file2_name, "%s%s.raw", ROOT_WRITE, "coo_jj");
-    sprintf(file3_name, "%s%s.raw", ROOT_WRITE, "coo_aa");
-    sprintf(file4_name, "%s%s.raw", ROOT_WRITE, "coo_ff");
-
+    sprintf(file1_name, "%s%s.raw", ROOT_WRITE, "vtx_uu");
+    sprintf(file2_name, "%s%s.raw", ROOT_WRITE, "vtx_ff");
+    sprintf(file3_name, "%s%s.raw", ROOT_WRITE, "coo_ii");
+    sprintf(file4_name, "%s%s.raw", ROOT_WRITE, "coo_jj");
+    sprintf(file5_name, "%s%s.raw", ROOT_WRITE, "coo_aa");
+    
     //open
     file1 = fopen(file1_name,"wb");
     file2 = fopen(file2_name,"wb");
     file3 = fopen(file3_name,"wb");
     file4 = fopen(file4_name,"wb");
-    
+    file5 = fopen(file5_name,"wb");
+  
     //map
-    ptr1 = clEnqueueMapBuffer(ocl->command_queue, ocl->mtx_ii, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(int)  , 0, NULL, NULL, &ocl->err);
-    ptr2 = clEnqueueMapBuffer(ocl->command_queue, ocl->mtx_jj, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(int)  , 0, NULL, NULL, &ocl->err);
-    ptr3 = clEnqueueMapBuffer(ocl->command_queue, ocl->mtx_aa, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
-    ptr4 = clEnqueueMapBuffer(ocl->command_queue, ocl->mtx_ff, CL_TRUE, CL_MAP_READ, 0,    msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
-    
-//    for(int i=0; i<msh->nv_tot; i++)
-//    {
-//        printf("%e\n", ptr4[i]);
-//    }
- 
+    ptr1 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_uu, CL_TRUE, CL_MAP_READ, 0,    msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    ptr2 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_ff, CL_TRUE, CL_MAP_READ, 0,    msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    ptr3 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_ii, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(cl_int4)  , 0, NULL, NULL, &ocl->err);
+    ptr4 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_jj, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(cl_int4)  , 0, NULL, NULL, &ocl->err);
+    ptr5 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_aa, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+     
     //write
-    fwrite(ptr1, sizeof(int),   27*msh->nv_tot, file1);
-    fwrite(ptr2, sizeof(int),   27*msh->nv_tot, file2);
-    fwrite(ptr3, sizeof(float), 27*msh->nv_tot, file3);
-    fwrite(ptr4, sizeof(float),    msh->nv_tot, file4);
+    fwrite(ptr1, sizeof(cl_float4),    msh->nv_tot, file1);
+    fwrite(ptr2, sizeof(cl_float4),    msh->nv_tot, file2);
+    fwrite(ptr3, sizeof(cl_int4),   27*msh->nv_tot, file3);
+    fwrite(ptr4, sizeof(cl_int4),   27*msh->nv_tot, file4);
+    fwrite(ptr5, sizeof(cl_float4), 27*msh->nv_tot, file5);
     
     //unmap
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->mtx_ii, ptr1, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->mtx_jj, ptr2, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->mtx_aa, ptr3, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->mtx_ff, ptr4, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_uu, ptr1, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_ff, ptr2, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_ii, ptr3, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_jj, ptr4, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_aa, ptr5, 0, NULL, NULL);
     
     //close
     fclose(file1);
     fclose(file2);
     fclose(file3);
     fclose(file4);
+    fclose(file5);
 
     return;
 }
 
 
 //write
-void mtx_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
+void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
 {
     //host
     cl_float4 *hst_ptr;
@@ -152,5 +155,5 @@ void mtx_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
 }
 
 
-#endif /* mtx_h */
+#endif /* coo_h */
 
