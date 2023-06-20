@@ -71,8 +71,8 @@ kernel void vtx_init(constant   float  *buf_cc,
             for(int j=0; j<4; j++)
             {
                 blk_ii[4*i+j] = 4*vtx_idx + i;
-                blk_jj[4*i+j] = 4*vtx_idx + j;
-                blk_aa[4*i+j] = 1e0;
+                blk_jj[4*i+j] = 4*k + j;
+                blk_aa[4*i+j] = (k==vtx_idx)*(i==j);
             }
         }
     }
