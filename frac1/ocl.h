@@ -182,7 +182,6 @@ void ocl_final(struct ocl_obj *ocl)
 
     //kernels
     ocl->err = clReleaseKernel(ocl->vtx_init);
-//    ocl->err = clReleaseKernel(ocl->vtx_assm);
 
     //memory
     ocl->err = clReleaseMemObject(ocl->buf_cc);
