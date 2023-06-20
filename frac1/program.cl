@@ -10,6 +10,14 @@ int fn_idx(const int *pos, const int *dim);
 int fn_bc1(const int *pos, const int *dim);
 int fn_bc2(const int *pos, const int *dim);
 
+void bas_eval(const float3 p, float ee[8]);
+void bas_grad(const float3 p, float3 gg[8], const float3 dx);
+
+/*
+ ===================================
+ util
+ ===================================
+ */
 
 //flat index
 int fn_idx(const int *pos, const int *dim)
@@ -28,6 +36,70 @@ int fn_bc2(const int *pos, const int *dim)
 {
      return (pos[0]==0)||(pos[1]==0)||(pos[2]==0)||(pos[0]==dim[0]-1)||(pos[1]==dim[1]-1)||(pos[2]==dim[2]-1);;
 }
+
+/*
+ ===================================
+ basis
+ ===================================
+ */
+
+//eval
+void bas_eval(const float3 p, float ee[8])
+{
+     ee[0] = (1e0f-p.x)*(1e0f-p.y)*(1e0f-p.z);
+     ee[1] = (     p.x)*(1e0f-p.y)*(1e0f-p.z);
+     ee[2] = (1e0f-p.x)*(     p.y)*(1e0f-p.z);
+     ee[3] = (     p.x)*(     p.y)*(1e0f-p.z);
+     ee[4] = (1e0f-p.x)*(1e0f-p.y)*(     p.z);
+     ee[5] = (     p.x)*(1e0f-p.y)*(     p.z);
+     ee[6] = (1e0f-p.x)*(     p.y)*(     p.z);
+     ee[7] = (     p.x)*(     p.y)*(     p.z);
+
+     return;
+}
+
+//grad
+void bas_grad(const float3 p, float3 gg[8], const float3 dx)
+{
+     gg[0] = (float3){(-1e0f)*(1e0f-p.y)*(1e0f-p.z), (1e0f-p.x)*(-1e0f)*(1e0f-p.z), (1e0f-p.x)*(1e0f-p.y)*(-1e0f)}/dx;
+     gg[1] = (float3){(+1e0f)*(1e0f-p.y)*(1e0f-p.z), (     p.x)*(-1e0f)*(1e0f-p.z), (     p.x)*(1e0f-p.y)*(-1e0f)}/dx;
+     gg[2] = (float3){(-1e0f)*(     p.y)*(1e0f-p.z), (1e0f-p.x)*(+1e0f)*(1e0f-p.z), (1e0f-p.x)*(     p.y)*(-1e0f)}/dx;
+     gg[3] = (float3){(+1e0f)*(     p.y)*(1e0f-p.z), (     p.x)*(+1e0f)*(1e0f-p.z), (     p.x)*(     p.y)*(-1e0f)}/dx;
+     gg[4] = (float3){(-1e0f)*(1e0f-p.y)*(     p.z), (1e0f-p.x)*(-1e0f)*(     p.z), (1e0f-p.x)*(1e0f-p.y)*(+1e0f)}/dx;
+     gg[5] = (float3){(+1e0f)*(1e0f-p.y)*(     p.z), (     p.x)*(-1e0f)*(     p.z), (     p.x)*(1e0f-p.y)*(+1e0f)}/dx;
+     gg[6] = (float3){(-1e0f)*(     p.y)*(     p.z), (1e0f-p.x)*(+1e0f)*(     p.z), (1e0f-p.x)*(     p.y)*(+1e0f)}/dx;
+     gg[7] = (float3){(+1e0f)*(     p.y)*(     p.z), (     p.x)*(+1e0f)*(     p.z), (     p.x)*(     p.y)*(+1e0f)}/dx;
+
+     return;
+}
+
+/*
+ ===================================
+ quadrature
+ ===================================
+ */
+
+////1-point gauss [0,1]
+//constant int   qpt_n    = 1;
+//constant float qpt_x[1] = {5e-1f};
+//constant float qpt_w[1] = {1e+0f};
+
+//2-point gauss [0,1]
+constant int   qpt_n    = 2;
+constant float qpt_x[2] = {0.211324865405187f,0.788675134594813f};
+constant float qpt_w[2] = {0.500000000000000f,0.500000000000000f};
+
+////3-point gauss [0,1]
+//constant int   qpt_n    = 3;
+//constant float qpt_x[3] = {0.112701665379258f,0.500000000000000f,0.887298334620742f};
+//constant float qpt_w[3] = {0.277777777777778f,0.444444444444444f,0.277777777777778f};
+
+/*
+ ===================================
+ kernels
+ ===================================
+ */
+
 
 //init
 kernel void vtx_init(constant   float  *buf_cc,
@@ -101,7 +173,6 @@ kernel void vtx_init(constant   float  *buf_cc,
 
 //                printf("adj %3d %d %d %3d [%+d,%+d,%+d] %2d %d %d\n",vtx_idx, vtx_bc1, vtx_bc2, adj_idx, adj_pos[0], adj_pos[1], adj_pos[2], blk_idx, adj_bc1, adj_bc2);
 
-
                 //dims
                 for(int i=0; i<4; i++)
                 {
@@ -140,6 +211,10 @@ kernel void vtx_assm(constant   float  *buf_cc,
     printf("vtx %3d\n",vtx_idx);
     printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
     
+    
+    int blk_row_idx = 27*16*vtx_idx;
+    global float *blk_row_aa = &coo_aa[blk_row_idx];
+    
     //ele
     for(int ele_k=0; ele_k<2; ele_k++)
     {
@@ -166,19 +241,42 @@ kernel void vtx_assm(constant   float  *buf_cc,
                             adj_pos[1] = ele_ref[1] + adj_j;
                             adj_pos[2] = ele_ref[2] + adj_k;
                             
-                            int adj_loc = (ele_i + adj_i) + 3*(ele_j + adj_j) + 9*(ele_k + adj_k);
-                            
                             int adj_idx = fn_idx(adj_pos, vtx_dim);
                             
-                            printf("adj_pos [%d,%d,%d] %2d %3d\n", adj_pos[0], adj_pos[1], adj_pos[2], adj_loc, adj_idx);
+                            
+                            //blk
+                            int blk_idx = (ele_i + adj_i) + 3*(ele_j + adj_j) + 9*(ele_k + adj_k);
+                            global float *blk_aa = &blk_row_aa[16*blk_idx];
+                            
+                            
+                            //write
+                            for(int i=0; i<16; i++)
+                            {
+                                blk_aa[i] += 1e0f;
+                            }
+                            
+
+                            printf("adj_pos [%d,%d,%d] %2d %3d\n", adj_pos[0], adj_pos[1], adj_pos[2], blk_idx, adj_idx);
+                            
+                            //qpt
+                            for(int qpt_k=0; qpt_k<qpt_n; qpt_k++)
+                            {
+                                for(int qpt_j=0; qpt_j<qpt_n; qpt_j++)
+                                {
+                                    for(int qpt_i=0; qpt_i<qpt_n; qpt_i++)
+                                    {
+                                    
+                                    }
+                                }
+                            }//qpt
                         }
                     }
-                }
+                }//adj
                 
                 
             }
         }
-    }
+    }//ele
     
     return;
 }
