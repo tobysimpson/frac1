@@ -43,7 +43,8 @@ kernel void vtx_init(constant   float  *buf_cc,
     
     int vtx_idx = fn_idx(vtx_pos, vtx_dim);
     
-//    printf("vtx %3d\n",vtx_idx);
+//    printf("vtx_idx %3d\n",vtx_idx);
+//    printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
     
     int vtx_bc1 = fn_bc1(vtx_pos, vtx_dim);
     int vtx_bc2 = fn_bc2(vtx_pos, vtx_dim);
@@ -137,6 +138,47 @@ kernel void vtx_assm(constant   float  *buf_cc,
     int vtx_idx = fn_idx(vtx_pos, vtx_dim);
     
     printf("vtx %3d\n",vtx_idx);
+    printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
+    
+    //ele
+    for(int ele_k=0; ele_k<2; ele_k++)
+    {
+        for(int ele_j=0; ele_j<2; ele_j++)
+        {
+            for(int ele_i=0; ele_i<2; ele_i++)
+            {
+                int ele_ref[3];
+                ele_ref[0] = vtx_pos[0] + ele_i - 1;
+                ele_ref[1] = vtx_pos[1] + ele_j - 1;
+                ele_ref[2] = vtx_pos[2] + ele_k - 1;
+                
+                printf("ele_ref [%d,%d,%d]\n", ele_ref[0], ele_ref[1], ele_ref[2]);
+                
+                //adj
+                for(int adj_k=0; adj_k<2; adj_k++)
+                {
+                    for(int adj_j=0; adj_j<2; adj_j++)
+                    {
+                        for(int adj_i=0; adj_i<2; adj_i++)
+                        {
+                            int adj_pos[3];
+                            adj_pos[0] = ele_ref[0] + adj_i;
+                            adj_pos[1] = ele_ref[1] + adj_j;
+                            adj_pos[2] = ele_ref[2] + adj_k;
+                            
+                            int adj_loc = (ele_i + adj_i) + 3*(ele_j + adj_j) + 9*(ele_k + adj_k);
+                            
+                            int adj_idx = fn_idx(adj_pos, vtx_dim);
+                            
+                            printf("adj_pos [%d,%d,%d] %2d %3d\n", adj_pos[0], adj_pos[1], adj_pos[2], adj_loc, adj_idx);
+                        }
+                    }
+                }
+                
+                
+            }
+        }
+    }
     
     return;
 }
