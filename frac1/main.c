@@ -34,7 +34,7 @@ int main(int argc, const char * argv[])
     
     //calc
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_init, 3, NULL, msh.nv, NULL, 0, NULL, NULL);
-//    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, msh.iv, NULL, 0, NULL, NULL);
+    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, msh.iv, NULL, 0, NULL, NULL);
     
     //write
     wrt_coo(&msh, &ocl);

@@ -43,7 +43,7 @@ kernel void vtx_init(constant   float  *buf_cc,
     
     int vtx_idx = fn_idx(vtx_pos, vtx_dim);
     
-    printf("vtx %3d\n",vtx_idx);
+//    printf("vtx %3d\n",vtx_idx);
     
     int vtx_bc1 = fn_bc1(vtx_pos, vtx_dim);
     int vtx_bc2 = fn_bc2(vtx_pos, vtx_dim);
@@ -96,9 +96,9 @@ kernel void vtx_init(constant   float  *buf_cc,
                 global float *blk_aa = &blk_row_aa[blk_col_idx];
                 
                 int adj_bc1 = fn_bc1(adj_pos, vtx_dim);
-                int adj_bc2 = fn_bc2(adj_pos, vtx_dim);
+//                int adj_bc2 = fn_bc2(adj_pos, vtx_dim);
 
-                printf("adj %3d %d %d %3d [%+d,%+d,%+d] %2d %d %d\n",vtx_idx, vtx_bc1, vtx_bc2, adj_idx, adj_pos[0], adj_pos[1], adj_pos[2], blk_idx, adj_bc1, adj_bc2);
+//                printf("adj %3d %d %d %3d [%+d,%+d,%+d] %2d %d %d\n",vtx_idx, vtx_bc1, vtx_bc2, adj_idx, adj_pos[0], adj_pos[1], adj_pos[2], blk_idx, adj_bc1, adj_bc2);
 
 
                 //dims
@@ -116,7 +116,27 @@ kernel void vtx_init(constant   float  *buf_cc,
         }
     }
     
-    
+    return;
+}
 
+
+
+//assemble
+kernel void vtx_assm(constant   float  *buf_cc,
+                     global     float  *vtx_xx,
+                     global     float  *vtx_uu,
+                     global     float  *vtx_ff,
+                     global     int    *coo_ii,
+                     global     int    *coo_jj,
+                     global     float  *coo_aa)
+{
+    //interior only
+    int vtx_dim[3] = {get_global_size(0) + 2, get_global_size(1) + 2, get_global_size(2) + 2};
+    int vtx_pos[3] = {get_global_id(0)   + 1, get_global_id(1)   + 1, get_global_id(2)   + 1};
+    
+    int vtx_idx = fn_idx(vtx_pos, vtx_dim);
+    
+    printf("vtx %3d\n",vtx_idx);
+    
     return;
 }
