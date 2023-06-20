@@ -84,7 +84,7 @@ void bas_grad(const float p[3], float gg[8][3])
     gg[6][2] = (1e0f-p[0])*(     p[1])*(+1e0f);
     gg[7][0] = (+1e0f)*(     p[1])*(     p[2]);
     gg[7][1] = (     p[0])*(+1e0f)*(     p[2]);
-    gg[8][2] = (     p[0])*(     p[1])*(+1e0f);
+    gg[7][2] = (     p[0])*(     p[1])*(+1e0f);
 
     return;
 }
@@ -112,15 +112,15 @@ void bas_grad(const float p[3], float gg[8][3])
  ===================================
  */
 
-////1-point gauss [0,1]
-//constant int   qpt_n    = 1;
-//constant float qpt_x[1] = {5e-1f};
-//constant float qpt_w[1] = {1e+0f};
+//1-point gauss [0,1]
+constant int   qpt_n    = 1;
+constant float qpt_x[1] = {5e-1f};
+constant float qpt_w[1] = {1e+0f};
 
-//2-point gauss [0,1]
-constant int   qpt_n    = 2;
-constant float qpt_x[2] = {0.211324865405187f,0.788675134594813f};
-constant float qpt_w[2] = {0.500000000000000f,0.500000000000000f};
+////2-point gauss [0,1]
+//constant int   qpt_n    = 2;
+//constant float qpt_x[2] = {0.211324865405187f,0.788675134594813f};
+//constant float qpt_w[2] = {0.500000000000000f,0.500000000000000f};
 
 ////3-point gauss [0,1]
 //constant int   qpt_n    = 3;
@@ -277,6 +277,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                             
                             float ee[8];
                             float gg[8][3];
+                            
                             bas_eval(qp, ee);
                             bas_grad(qp, gg);
                             
@@ -298,7 +299,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                                         int adj_loc = adj_i + 2*adj_j + 4*adj_k;
                                         
                                       
-                                        printf("%d %e [%+e,%+e,%+e]\n",adj_loc,ee[adj_loc], gg[adj_loc][0], gg[adj_loc][1], gg[adj_loc][2]);
+                                        printf("%d %e [%+e,%+e,%+e] %e\n",adj_loc,ee[adj_loc], gg[adj_loc][0], gg[adj_loc][1], gg[adj_loc][2],qw);
                                         
                                         
                                         //blk
@@ -310,7 +311,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                                         blk_aa[15] += 1e0f;
                                         
                                         
-                                        printf("adj_pos [%d,%d,%d] %2d %3d\n", adj_pos[0], adj_pos[1], adj_pos[2], blk_idx, adj_idx);
+//                                        printf("adj_pos [%d,%d,%d] %2d %3d\n", adj_pos[0], adj_pos[1], adj_pos[2], blk_idx, adj_idx);
                                         
                                     }
                                 }
