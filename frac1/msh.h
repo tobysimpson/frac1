@@ -50,7 +50,9 @@ void msh_init(struct msh_obj *msh)
     //constants
     msh->cc[0] = msh->xmin;
     msh->cc[1] = msh->xmax;
-    msh->cc[2] = (cl_float4){(msh->cc[1].x - msh->cc[0].x)/(float)msh->ne[0],(msh->cc[1].y - msh->cc[0].y)/(float)msh->ne[1], (msh->cc[1].z - msh->cc[0].z)/(float)msh->ne[2], 0e0f};  //dx
+    msh->cc[2] = (cl_float3){(msh->cc[1].x - msh->cc[0].x)/(float)msh->ne[0],
+                             (msh->cc[1].y - msh->cc[0].y)/(float)msh->ne[1],
+                             (msh->cc[1].z - msh->cc[0].z)/(float)msh->ne[2]};  //dx
     
     printf("xmin=[%+f,%+f,%+f]\n",msh->cc[0].x,msh->cc[0].y,msh->cc[0].z);
     printf("xmax=[%+f,%+f,%+f]\n",msh->cc[1].x,msh->cc[1].y,msh->cc[1].z);

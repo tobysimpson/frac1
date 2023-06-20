@@ -13,20 +13,6 @@
 //write
 void wrt_coo(struct msh_obj *msh, struct ocl_obj *ocl)
 {
-    //ptr
-    void *ptr1;
-    void *ptr2;
-    void *ptr3;
-    void *ptr4;
-    void *ptr5;
-    
-    //file
-    FILE* file1;
-    FILE* file2;
-    FILE* file3;
-    FILE* file4;
-    FILE* file5;
-    
     //name
     char file1_name[250];
     char file2_name[250];
@@ -41,32 +27,25 @@ void wrt_coo(struct msh_obj *msh, struct ocl_obj *ocl)
     sprintf(file5_name, "%s%s.raw", ROOT_WRITE, "coo_aa");
     
     //open
-    file1 = fopen(file1_name,"wb");
-    file2 = fopen(file2_name,"wb");
-    file3 = fopen(file3_name,"wb");
-    file4 = fopen(file4_name,"wb");
-    file5 = fopen(file5_name,"wb");
+    FILE* file1 = fopen(file1_name,"wb");
+    FILE* file2 = fopen(file2_name,"wb");
+    FILE* file3 = fopen(file3_name,"wb");
+    FILE* file4 = fopen(file4_name,"wb");
+    FILE* file5 = fopen(file5_name,"wb");
   
     //map
-    ptr1 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_uu, CL_TRUE, CL_MAP_READ, 0,    msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
-    ptr2 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_ff, CL_TRUE, CL_MAP_READ, 0,    msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
-    ptr3 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_ii, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(cl_int4)  , 0, NULL, NULL, &ocl->err);
-    ptr4 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_jj, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(cl_int4)  , 0, NULL, NULL, &ocl->err);
-    ptr5 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_aa, CL_TRUE, CL_MAP_READ, 0, 27*msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    void *ptr1 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_uu, CL_TRUE, CL_MAP_READ, 0,     4*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+    void *ptr2 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_ff, CL_TRUE, CL_MAP_READ, 0,     4*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+    void *ptr3 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_ii, CL_TRUE, CL_MAP_READ, 0, 27*16*msh->nv_tot*sizeof(int)  , 0, NULL, NULL, &ocl->err);
+    void *ptr4 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_jj, CL_TRUE, CL_MAP_READ, 0, 27*16*msh->nv_tot*sizeof(int)  , 0, NULL, NULL, &ocl->err);
+    void *ptr5 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_aa, CL_TRUE, CL_MAP_READ, 0, 27*16*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
      
     //write
-    fwrite(ptr1, sizeof(cl_float4),    msh->nv_tot, file1);
-    fwrite(ptr2, sizeof(cl_float4),    msh->nv_tot, file2);
-    fwrite(ptr3, sizeof(cl_int4),   27*msh->nv_tot, file3);
-    fwrite(ptr4, sizeof(cl_int4),   27*msh->nv_tot, file4);
-    fwrite(ptr5, sizeof(cl_float4), 27*msh->nv_tot, file5);
-    
-    //unmap
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_uu, ptr1, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_ff, ptr2, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_ii, ptr3, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_jj, ptr4, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_aa, ptr5, 0, NULL, NULL);
+    fwrite(ptr1, sizeof(float),     4*msh->nv_tot, file1);
+    fwrite(ptr2, sizeof(float),     4*msh->nv_tot, file2);
+    fwrite(ptr3, sizeof(int),   27*16*msh->nv_tot, file3);
+    fwrite(ptr4, sizeof(int),   27*16*msh->nv_tot, file4);
+    fwrite(ptr5, sizeof(float), 27*16*msh->nv_tot, file5);
     
     //close
     fclose(file1);
@@ -74,6 +53,13 @@ void wrt_coo(struct msh_obj *msh, struct ocl_obj *ocl)
     fclose(file3);
     fclose(file4);
     fclose(file5);
+    
+    //unmap
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_uu, ptr1, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_ff, ptr2, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_ii, ptr3, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_jj, ptr4, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_aa, ptr5, 0, NULL, NULL);
 
     return;
 }
@@ -82,17 +68,15 @@ void wrt_coo(struct msh_obj *msh, struct ocl_obj *ocl)
 //write
 void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
 {
-    //host
-    cl_float4 *hst_ptr;
-    
+
     FILE* file1;
-    char file_name1[250];
+    char file1_name[250];
     
     //file name
-    sprintf(file_name1, "%s%s.%03d.vtk", ROOT_WRITE, "grid1", 0);
+    sprintf(file1_name, "%s%s.%03d.vtk", ROOT_WRITE, "grid1", 0);
     
     //open
-    file1 = fopen(file_name1,"w");
+    file1 = fopen(file1_name,"w");
     
     //write
     fprintf(file1,"# vtk DataFile Version 3.0\n");
@@ -108,34 +92,34 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     //map read
-    hst_ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_xx, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    cl_float4 *ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_xx, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
     
     fprintf(file1,"POINTS %zu float\n", msh->nv_tot);
 
     
     for(int i=0; i<msh->nv_tot; i++)
     {
-        fprintf(file1, "%+e %+e %+e\n", hst_ptr[i].x, hst_ptr[i].y, hst_ptr[i].z);
+        fprintf(file1, "%e %e %e\n", ptr[i].x, ptr[i].y, ptr[i].z);
     }
 
     //unmap read
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_xx, hst_ptr, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_xx, ptr, 0, NULL, NULL);
     
     /*
      ===================
-     vertex data
+     soln
      ===================
      */
     
     //map read
-    hst_ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_uu, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_uu, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
     
     fprintf(file1,"\nPOINT_DATA %zu\n", msh->nv_tot);
     fprintf(file1,"VECTORS pv1 float\n");
     
     for(int i=0; i<msh->nv_tot; i++)
     {
-        fprintf(file1, "%e %e %e\n", hst_ptr[i].x, hst_ptr[i].y, hst_ptr[i].z);
+        fprintf(file1, "%e %e %e\n", ptr[i].x, ptr[i].y, ptr[i].z);
     }
     
     fprintf(file1,"FIELD FieldData1 1\n");
@@ -143,11 +127,31 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
     
     for(int i=0; i<msh->nv_tot; i++)
     {
-        fprintf(file1, "%e %e %e %e\n", hst_ptr[i].x, hst_ptr[i].y, hst_ptr[i].z, hst_ptr[i].w);
+        fprintf(file1, "%e %e %e %e\n", ptr[i].x, ptr[i].y, ptr[i].z, ptr[i].w);
     }
 
     //unmap read
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_uu, hst_ptr, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_uu, ptr, 0, NULL, NULL);
+    
+    /*
+     ===================
+     rhs
+     ===================
+     */
+    
+    //map read
+    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_ff, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    
+    fprintf(file1,"FIELD FieldData2 1\n");
+    fprintf(file1,"pf2 4 %zu float\n", msh->nv_tot);
+    
+    for(int i=0; i<msh->nv_tot; i++)
+    {
+        fprintf(file1, "%e %e %e %e\n", ptr[i].x, ptr[i].y, ptr[i].z, ptr[i].w);
+    }
+
+    //unmap read
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_ff, ptr, 0, NULL, NULL);
 
     fclose(file1);
 
