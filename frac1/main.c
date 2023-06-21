@@ -21,7 +21,7 @@ int main(int argc, const char * argv[])
     
     //params
     size_t  ne = 2;
-    float   x0 = 0e0;
+    float   x0 = 0e0f;
     float   x1 = ne;
     
     //objects

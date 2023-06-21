@@ -276,8 +276,8 @@ kernel void vtx_assm(constant   float  *buf_cc,
     
     int vtx_idx = fn_idx(vtx_pos, vtx_dim);
     
-    printf("vtx %3d\n",vtx_idx);
-    printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
+//    printf("vtx %3d\n",vtx_idx);
+//    printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
     
     
     int blk_row_idx = 27*16*vtx_idx;
@@ -299,7 +299,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                 int ele_idx2 = ele_i + 2*ele_j + 4*ele_k;
                 int vtx_idx2 = 7 - ele_idx2;
                 
-                printf("ele [%d,%d,%d] %d %d\n", ele_ref[0], ele_ref[1], ele_ref[2], ele_idx2, vtx_idx2);
+//                printf("ele [%d,%d,%d] %d %d\n", ele_ref[0], ele_ref[1], ele_ref[2], ele_idx2, vtx_idx2);
                 
                 //qpt
                 for(int qpt_k=0; qpt_k<qpt_n; qpt_k++)
@@ -312,7 +312,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                             float qp[3] = {qpt_x[qpt_i],qpt_x[qpt_j],qpt_x[qpt_k]};
                             float qw    = qpt_w[qpt_i]*qpt_w[qpt_j]*qpt_w[qpt_k];
 
-                            printf("qpt [%6.4f,%6.4f,%6.4f] %6.4f\n",qp[0], qp[1], qp[2], qw);
+//                            printf("qpt [%6.4f,%6.4f,%6.4f] %6.4f\n",qp[0], qp[1], qp[2], qw);
                             
                             //basis
                             float ee[8];
@@ -347,32 +347,35 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //                                        float *g1 = gg[vtx_idx2];
 //                                        float *g2 = gg[adj_idx2];
                                         
-                                        for(int i=0; i<8; i++)
-                                        {
-            //                                float *g = gg[i];
-                                            
-                                            printf("gg %d [%+6.4f %+6.4f %+6.4f]\n", i, gg[i][0], gg[i][1], gg[i][2]);
-                                            
-                                        }
+//                                        for(int i=0; i<8; i++)
+//                                        {
+//            //                                float *g = gg[i];
+//
+//                                            printf("gg %d [%+6.4f %+6.4f %+6.4f]\n", i, gg[i][0], gg[i][1], gg[i][2]);
+//
+//                                        }
                                         
 //                                        printf("dt %d [%+6.4f,%+6.4f,%+6.4f] %d [%+6.4f,%+6.4f,%+6.4f] %+e %+e\n", vtx_idx2, g1[0], g1[1], g1[2], adj_idx2, g2[0], g2[1], g2[2], fn_dot(g1, g2),qw);
                                         
-                                        printf("vv %d  %+6.4f %+6.4f %+6.4f\n",vtx_idx2,gg[vtx_idx2][0],gg[vtx_idx2][1],gg[vtx_idx2][2]);
+//                                        printf("vv %d  %+6.4f %+6.4f %+6.4f\n",vtx_idx2,gg[vtx_idx2][0],gg[vtx_idx2][1],gg[vtx_idx2][2]);
                                         
                                         //blk
                                         global float *blk_aa = &blk_row_aa[16*adj_idx];
                                         
                                         
                                         //calc
-//                                      blk_aa[15] += fn_dot(gg[vtx_idx2], gg[adj_idx2]);
+                                        blk_aa[0] += qw;
+                                        
+                                        
+                                      //blk_aa[15] += fn_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
                                         
                                         
                                         
-                                        //write all
-                                        for(int i=0; i<16; i++)
-                                        {
-                                            blk_aa[i] += fn_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
-                                        }
+//                                        //write all
+//                                        for(int i=0; i<16; i++)
+//                                        {
+//                                            blk_aa[i] += fn_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
+//                                        }
 
 
                                         
