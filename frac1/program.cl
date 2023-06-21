@@ -112,10 +112,10 @@ void bas_grad(const float p[3], float gg[8][3])
  ===================================
  */
 
-//1-point gauss [0,1]
-constant int   qpt_n    = 1;
-constant float qpt_x[1] = {5e-1f};
-constant float qpt_w[1] = {1e+0f};
+////1-point gauss [0,1]
+//constant int   qpt_n    = 1;
+//constant float qpt_x[1] = {5e-1f};
+//constant float qpt_w[1] = {1e+0f};
 
 ////2-point gauss [0,1]
 //constant int   qpt_n    = 2;
@@ -255,31 +255,34 @@ kernel void vtx_assm(constant   float  *buf_cc,
         {
             for(int ele_i=0; ele_i<2; ele_i++)
             {
+                //ref vtx
                 int ele_ref[3];
                 ele_ref[0] = vtx_pos[0] + ele_i - 1;
                 ele_ref[1] = vtx_pos[1] + ele_j - 1;
                 ele_ref[2] = vtx_pos[2] + ele_k - 1;
                 
-                printf("ele_ref [%d,%d,%d]\n", ele_ref[0], ele_ref[1], ele_ref[2]);
+                int ele_idx2 = ele_i + 2*ele_j + 4*ele_k;
                 
-                //qpt
-                for(int qpt_k=0; qpt_k<qpt_n; qpt_k++)
-                {
-                    for(int qpt_j=0; qpt_j<qpt_n; qpt_j++)
-                    {
-                        for(int qpt_i=0; qpt_i<qpt_n; qpt_i++)
-                        {
+                printf("ele [%d,%d,%d] %d\n", ele_ref[0], ele_ref[1], ele_ref[2], ele_idx2);
+                
+//                //qpt
+//                for(int qpt_k=0; qpt_k<qpt_n; qpt_k++)
+//                {
+//                    for(int qpt_j=0; qpt_j<qpt_n; qpt_j++)
+//                    {
+//                        for(int qpt_i=0; qpt_i<qpt_n; qpt_i++)
+//                        {
+//
+//                            float qp[3] = {qpt_x[qpt_i],qpt_x[qpt_j],qpt_x[qpt_k]};
+//                            float qw    = qpt_w[qpt_i]*qpt_w[qpt_j]*qpt_w[qpt_k];
+//
+//                            float ee[8];
+//                            float gg[8][3];
+//
+//                            bas_eval(qp, ee);
+//                            bas_grad(qp, gg);
                             
-                            float qp[3] = {qpt_x[qpt_i],qpt_x[qpt_j],qpt_x[qpt_k]};
-                            float qw    = qpt_w[qpt_i]*qpt_w[qpt_j]*qpt_w[qpt_k];
-                            
-                            float ee[8];
-                            float gg[8][3];
-                            
-                            bas_eval(qp, ee);
-                            bas_grad(qp, gg);
-                            
-                            
+
                             //adj
                             for(int adj_k=0; adj_k<2; adj_k++)
                             {
@@ -291,29 +294,27 @@ kernel void vtx_assm(constant   float  *buf_cc,
                                         adj_pos[0] = ele_ref[0] + adj_i;
                                         adj_pos[1] = ele_ref[1] + adj_j;
                                         adj_pos[2] = ele_ref[2] + adj_k;
-                                        
-                                        int adj_idx = fn_idx(adj_pos, vtx_dim);
-                                        
-                                        int adj_loc = adj_i + 2*adj_j + 4*adj_k;
-                                        
-                                      
-                                        printf("%d %e [%+e,%+e,%+e] %e\n",adj_loc,ee[adj_loc], gg[adj_loc][0], gg[adj_loc][1], gg[adj_loc][2],qw);
-                                        
+
+                                        int adj_idx = fn_idx(adj_pos, vtx_dim);                                     //global
+                                        int adj_idx2 = adj_i + 2*adj_j + 4*adj_k;                                   //2x2x2
+                                        int adj_idx3 = (ele_i + adj_i) + 3*(ele_j + adj_j) + 9*(ele_k + adj_k);     //3x3x3
+
+                                        int vtx_idx2 = 7 - ele_idx2;
+
+                                        printf("adj [%d,%d,%d] %d %d | %2d %3d\n", adj_pos[0], adj_pos[1], adj_pos[2], vtx_idx2, adj_idx2, adj_idx3, adj_idx);
                                         
                                         //blk
-                                        int blk_idx = (ele_i + adj_i) + 3*(ele_j + adj_j) + 9*(ele_k + adj_k);
-                                        global float *blk_aa = &blk_row_aa[16*blk_idx];
-                                        
+                                        global float *blk_aa = &blk_row_aa[16*adj_idx3];
                                         
                                         //write
                                         for(int i=0; i<16; i++)
                                         {
                                             blk_aa[i] += 1e0f;
                                         }
-                                        
-                                        
-//                                        printf("adj_pos [%d,%d,%d] %2d %3d\n", adj_pos[0], adj_pos[1], adj_pos[2], blk_idx, adj_idx);
-                                        
+
+
+                                        //printf("%d %e [%+e,%+e,%+e] %e\n",adj_loc,ee[adj_loc], gg[adj_loc][0], gg[adj_loc][1], gg[adj_loc][2],qw);
+
                                     }
                                 }
                             }//adj
@@ -321,9 +322,9 @@ kernel void vtx_assm(constant   float  *buf_cc,
                             
                             
                             
-                        }
-                    }
-                }//qpt
+//                        }
+//                    }
+//                }//qpt
                 
                 
                 
