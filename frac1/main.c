@@ -20,7 +20,7 @@ int main(int argc, const char * argv[])
     printf("hello\n");
     
     //params
-    size_t  ne = 2;
+    size_t  ne = 8;
     float   x0 = 0e0f;
     float   x1 = ne;
     

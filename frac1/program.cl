@@ -14,6 +14,7 @@ void bas_eval(const float p[3], float ee[8]);
 void bas_grad(const float p[3], float gg[8][3]);
 
 float fn_dot(float *a, float *b);
+float fn_tip(float *a, float *b);
 
 /*
  ===================================
@@ -111,7 +112,7 @@ void bas_grad(const float p[3], float gg[8][3])
 
 /*
  ===================================
- tensors
+ linear algebra R^3
  ===================================
  */
 
@@ -122,6 +123,26 @@ float fn_dot(float *a, float *b)
 }
 
 //tensor inner prod
+float fn_tip(float *a, float *b)
+{
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3] + a[4]*b[4] + a[5]*b[5] + a[6]*b[6] + a[7]*b[7] + a[8]*b[8];
+}
+
+
+//trace sym
+float fn_str(float *a)
+{
+    return;
+}
+
+//matrix sym squared
+float fn_ssq(float *a, float *b)
+{
+
+    return;
+}
+
+
 
 
 /*
@@ -130,9 +151,12 @@ float fn_dot(float *a, float *b)
  ===================================
  */
 
+//strain
+
+
 //stress
 
-//strain
+
 
 //energy
 
