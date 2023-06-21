@@ -262,8 +262,6 @@ kernel void vtx_assm(constant   float  *buf_cc,
                 
                 printf("ele_ref [%d,%d,%d]\n", ele_ref[0], ele_ref[1], ele_ref[2]);
                 
-  
-                
                 //qpt
                 for(int qpt_k=0; qpt_k<qpt_n; qpt_k++)
                 {
@@ -308,7 +306,10 @@ kernel void vtx_assm(constant   float  *buf_cc,
                                         
                                         
                                         //write
-                                        blk_aa[15] += 1e0f;
+                                        for(int i=0; i<16; i++)
+                                        {
+                                            blk_aa[i] += 1e0f;
+                                        }
                                         
                                         
 //                                        printf("adj_pos [%d,%d,%d] %2d %3d\n", adj_pos[0], adj_pos[1], adj_pos[2], blk_idx, adj_idx);
