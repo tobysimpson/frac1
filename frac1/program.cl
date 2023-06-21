@@ -321,7 +321,10 @@ kernel void vtx_assm(constant   float  *buf_cc,
                             bas_eval(qp, ee);
                             bas_grad(qp, gg);
                             
-
+//                            for(int i=0; i<8; i++)
+//                            {
+//                                printf("gg %d [%+6.4f %+6.4f %+6.4f]\n", i, gg[i][0], gg[i][1], gg[i][2]);
+//                            }
                             
 //                            printf("vtx_gg %d [%+6.4f,%+6.4f,%+6.4f]\n", vtx_idx2, gg[vtx_idx2][0], gg[vtx_idx2][1], gg[vtx_idx2][2]);
 
@@ -347,35 +350,24 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //                                        float *g1 = gg[vtx_idx2];
 //                                        float *g2 = gg[adj_idx2];
                                         
-//                                        for(int i=0; i<8; i++)
-//                                        {
-//            //                                float *g = gg[i];
-//
-//                                            printf("gg %d [%+6.4f %+6.4f %+6.4f]\n", i, gg[i][0], gg[i][1], gg[i][2]);
-//
-//                                        }
-                                        
+                     
 //                                        printf("dt %d [%+6.4f,%+6.4f,%+6.4f] %d [%+6.4f,%+6.4f,%+6.4f] %+e %+e\n", vtx_idx2, g1[0], g1[1], g1[2], adj_idx2, g2[0], g2[1], g2[2], fn_dot(g1, g2),qw);
                                         
 //                                        printf("vv %d  %+6.4f %+6.4f %+6.4f\n",vtx_idx2,gg[vtx_idx2][0],gg[vtx_idx2][1],gg[vtx_idx2][2]);
                                         
                                         //blk
                                         global float *blk_aa = &blk_row_aa[16*adj_idx3];
-                                        
-                                        
-                                        //calc
-//                                        blk_aa[0] += qw;
-                                        
-                                        
-                                      //blk_aa[15] += fn_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
+                                          
+                                        //write
+                                        blk_aa[15] += fn_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
                                         
                                         
                                         
-                                        //write all
-                                        for(int i=0; i<16; i++)
-                                        {
-                                            blk_aa[i] += fn_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
-                                        }
+//                                        //write all
+//                                        for(int i=0; i<16; i++)
+//                                        {
+//                                            blk_aa[i] += fn_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
+//                                        }
 
 
                                         
