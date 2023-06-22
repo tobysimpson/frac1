@@ -5,6 +5,10 @@
 //  Created by Toby Simpson on 19.06.23.
 //
 
+//constants
+constant float mat_lam = 1e0f;
+constant float mat_mu  = 1e0f;
+
 //prototypes
 int fn_idx(const int *pos, const int *dim);
 int fn_bc1(const int *pos, const int *dim);
@@ -15,6 +19,13 @@ void bas_grad(const float p[3], float gg[8][3]);
 
 float fn_dot(float *a, float *b);
 float fn_tip(float *a, float *b);
+
+float fn_trS(float *a);
+void  fn_sqS(float *a, float *b);
+float fn_dotS(float *a, float *b);
+
+void fn_e(float *u, float *e);
+void fn_s(float *e, float *s);
 
 /*
  ===================================
@@ -122,28 +133,31 @@ float fn_dot(float *a, float *b)
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
-//tensor inner prod
-float fn_tip(float *a, float *b)
+
+//sym trace
+float fn_trS(float *a)
 {
-    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3] + a[4]*b[4] + a[5]*b[5] + a[6]*b[6] + a[7]*b[7] + a[8]*b[8];
+    return a[0] + a[3] + a[5];
 }
 
-
-//trace sym
-float fn_str(float *a)
+//sym squared
+void fn_sqS(float *a, float *b)
 {
+    b[0] = a[0]*a[0] + a[1]*a[1] + a[2]*a[2];
+    b[1] = a[0]*a[1] + a[1]*a[3] + a[2]*a[4];
+    b[2] = a[0]*a[2] + a[1]*a[4] + a[2]*a[5];
+    b[3] = a[1]*a[1] + a[3]*a[3] + a[4]*a[4];
+    b[4] = a[1]*a[2] + a[3]*a[4] + a[4]*a[5];
+    b[5] = a[2]*a[2] + a[4]*a[4] + a[5]*a[5];
+    
     return;
 }
 
-//matrix sym squared
-float fn_ssq(float *a, float *b)
+//sym tensor inner prod
+float fn_dotS(float *a, float *b)
 {
-
-    return;
+    return a[0]*b[0] + 2e0f*a[1]*b[1] + 2e0f*a[2]*b[2] + a[3]*b[3] + 2e0f*a[4]*b[4] + a[5]*b[5];
 }
-
-
-
 
 /*
  ===================================
@@ -151,11 +165,34 @@ float fn_ssq(float *a, float *b)
  ===================================
  */
 
-//strain
+//strain = 0.5(u + u')
+void fn_e(float *u, float *e)
+{
+    e[0] = 5e-1f*(u[0]+u[0]);
+    e[1] = 5e-1f*(u[1]+u[3]);
+    e[2] = 5e-1f*(u[2]+u[6]);
+    e[3] = 5e-1f*(u[4]+u[4]);
+    e[4] = 5e-1f*(u[5]+u[7]);
+    e[5] = 5e-1f*(u[8]+u[8]);
 
+    return;
+}
 
-//stress
+//stress pk2 = lam*tr(e)*I + 2*mu*e
+void fn_s(float *e, float *s)
+{
+    float a = 2e0f*mat_mu;
+    float b = mat_lam*fn_trS(e);
+    
+    s[0] = a*e[0] + b;
+    s[1] = a*e[1];
+    s[2] = a*e[2];
+    s[3] = a*e[3] + b;
+    s[4] = a*e[4];
+    s[5] = a*e[5] + b;
 
+    return;
+}
 
 
 //energy
