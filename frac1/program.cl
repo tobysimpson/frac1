@@ -5,7 +5,6 @@
 //  Created by Toby Simpson on 19.06.23.
 //
 
-
 struct i3
 {
     int x;
@@ -13,17 +12,6 @@ struct i3
     int z;
 };
 
-
-struct i3 add_i3(struct i3 a,  struct i3 b);
-
-struct i3 add_i3(struct i3 a,  struct i3 b)
-{
-    struct i3 c = {a.x + b.x, a.y + b.y, a.z + b.z};
-    
-    return c;
-}
-
-constant struct i3 idx2[8] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
 
 //params
@@ -39,18 +27,17 @@ void bas_eval(const float p[3], float ee[8]);
 void bas_grad(const float p[3], float gg[8][3]);
 void bas_tens(const int i, const float g[3], float a[3][3]);
 
-float fn_dot(float *a, float *b);
-float fn_tip(float *a, float *b);
+float vec_dot(float *a, float *b);
 
-float fn_trS(float *a);
-void  fn_sqS(float *a, float *b);
-float fn_dotS(float *a, float *b);
+float sym_tr(float *a);
+void  sym_sq(float *a, float *b);
+float sym_dot(float *a, float *b);
 
-void  fn_e(float *u, float *e);
-void  fn_s(float *e, float *s);
-float fn_p(float *e);
+void  mec_e(float *u, float *e);
+void  mec_s(float *e, float *s);
+float mec_p(float *e);
 
-
+struct i3 i3_add(struct i3 a, struct i3 b);
 
 /*
  ===================================
@@ -167,20 +154,20 @@ void bas_tens(const int i, const float g[3], float a[3][3])
  */
 
 //vector inner prod
-float fn_dot(float *a, float *b)
+float vec_dot(float *a, float *b)
 {
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
 
 //sym trace
-float fn_trS(float *a)
+float sym_tr(float *a)
 {
     return a[0] + a[3] + a[5];
 }
 
 //sym squared
-void fn_sqS(float *a, float *b)
+void sym_sq(float *a, float *b)
 {
     b[0] = a[0]*a[0] + a[1]*a[1] + a[2]*a[2];
     b[1] = a[0]*a[1] + a[1]*a[3] + a[2]*a[4];
@@ -193,7 +180,7 @@ void fn_sqS(float *a, float *b)
 }
 
 //sym tensor inner prod
-float fn_dotS(float *a, float *b)
+float sym_dot(float *a, float *b)
 {
     return a[0]*b[0] + 2e0f*a[1]*b[1] + 2e0f*a[2]*b[2] + a[3]*b[3] + 2e0f*a[4]*b[4] + a[5]*b[5];
 }
@@ -205,7 +192,7 @@ float fn_dotS(float *a, float *b)
  */
 
 //strain = 0.5(u + u')
-void fn_e(float *u, float *e)
+void mec_e(float *u, float *e)
 {
     e[0] = u[0];
     e[1] = 5e-1f*(u[1]+u[3]);
@@ -218,10 +205,10 @@ void fn_e(float *u, float *e)
 }
 
 //stress pk2 = lam*tr(e)*I + 2*mu*e
-void fn_s(float *e, float *s)
+void mec_s(float *e, float *s)
 {
     float a = 2e0f*mat_mu;
-    float b = mat_lam*fn_trS(e);
+    float b = mat_lam*sym_tr(e);
     
     s[0] = a*e[0] + b;
     s[1] = a*e[1];
@@ -234,13 +221,13 @@ void fn_s(float *e, float *s)
 }
 
 //energy phi = 0.5*lam*(tr(e))^2 + mu*tr(e^2)
-float fn_p(float *e)
+float mec_p(float *e)
 {
-    float a = fn_trS(e);
+    float a = sym_tr(e);
     float *b;
-    fn_sqS(e, b);
+    sym_sq(e, b);
     
-    return 5e-1f*mat_lam*a*a + mat_mu*fn_trS(b);
+    return 5e-1f*mat_lam*a*a + mat_mu*sym_tr(b);
 }
 
 /*
@@ -273,9 +260,14 @@ constant float qpt_w[3] = {0.277777777777778f,0.444444444444444f,0.2777777777777
 //constant int idx2[8][3]  = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 //constant int idx3[27][3] = {{0,0,0},{1,0,0},{2,0,0},{0,1,0},{1,1,0},{2,1,0},{0,2,0},{1,2,0},{2,2,0},{0,0,1},{1,0,1},{2,0,1},{0,1,1},{1,1,1},{2,1,1},{0,2,1},{1,2,1},{2,2,1},{0,0,2},{1,0,2},{2,0,2},{0,1,2},{1,1,2},{2,1,2},{0,2,2},{1,2,2},{2,2,2}};
 
+constant struct i3 idx2[8] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
-
-
+struct i3 i3_add(struct i3 a, struct i3 b)
+{
+    struct i3 c = {a.x + b.x, a.y + b.y, a.z + b.z};
+    
+    return c;
+}
 
 /*
  ===================================
@@ -423,7 +415,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
         
         for(int j=0; j<8; j++)
         {
-            struct i3 a = add_i3(idx2[i], idx2[j]);
+            struct i3 a = i3_add(idx2[i], idx2[j]);
 
             printf("%d %d | %d %d %d | %2d\n", i, j, a.x, a.y, a.z, a.x + a.y*3 + a.z*9);
         }
@@ -473,11 +465,6 @@ kernel void vtx_assm(constant   float  *buf_cc,
                             
                             //eval
 //                            float u_h[4] = {0e0f, 0e0f, 0e0f, 0e0f};
-                        
-
-
-                            
-                            
                             
                             //adj
                             for(int adj_k=0; adj_k<2; adj_k++)
@@ -504,7 +491,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                                         global float *blk_aa = &blk_row_aa[16*adj_idx3];
 
                                         //write
-                                        blk_aa[15] += fn_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
+                                        blk_aa[15] += vec_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
                                         
 
                                         //dims 3x3
