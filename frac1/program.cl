@@ -24,8 +24,9 @@ float fn_trS(float *a);
 void  fn_sqS(float *a, float *b);
 float fn_dotS(float *a, float *b);
 
-void fn_e(float *u, float *e);
-void fn_s(float *e, float *s);
+void  fn_e(float *u, float *e);
+void  fn_s(float *e, float *s);
+float fn_p(float *e);
 
 /*
  ===================================
@@ -195,10 +196,15 @@ void fn_s(float *e, float *s)
 }
 
 
-//energy
-
-
-
+//energy phi = 0.5*lam*(tr(e))^2 + mu*tr(e^2)
+float fn_p(float *e)
+{
+    float a = fn_trS(e);
+    float *b;
+    fn_sqS(e, b);
+    
+    return 5e-1f*mat_lam*a*a + mat_mu*fn_trS(b);
+}
 
 /*
  ===================================
