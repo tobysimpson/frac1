@@ -5,7 +5,28 @@
 //  Created by Toby Simpson on 19.06.23.
 //
 
-//constants
+
+struct i3
+{
+    int x;
+    int y;
+    int z;
+};
+
+
+struct i3 add_i3(struct i3 a,  struct i3 b);
+
+struct i3 add_i3(struct i3 a,  struct i3 b)
+{
+    struct i3 c = {a.x + b.x, a.y + b.y, a.z + b.z};
+    
+    return c;
+}
+
+constant struct i3 idx2[8] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
+
+
+//params
 constant float mat_lam = 1e0f;
 constant float mat_mu  = 1e0f;
 
@@ -16,6 +37,7 @@ int fn_bc2(const int *pos, const int *dim);
 
 void bas_eval(const float p[3], float ee[8]);
 void bas_grad(const float p[3], float gg[8][3]);
+void bas_tens(const int i, const float g[3], float a[3][3]);
 
 float fn_dot(float *a, float *b);
 float fn_tip(float *a, float *b);
@@ -27,6 +49,8 @@ float fn_dotS(float *a, float *b);
 void  fn_e(float *u, float *e);
 void  fn_s(float *e, float *s);
 float fn_p(float *e);
+
+
 
 /*
  ===================================
@@ -87,7 +111,7 @@ void bas_grad(const float p[3], float gg[8][3])
     float x0 = 1e0f - p[0];
     float y0 = 1e0f - p[1];
     float z0 = 1e0f - p[2];
-    
+
     float x1 = p[0];
     float y1 = p[1];
     float z1 = p[2];
@@ -118,9 +142,23 @@ void bas_grad(const float p[3], float gg[8][3])
     gg[5][2] = +x1*y0;
     gg[6][2] = +x0*y1;
     gg[7][2] = +x1*y1;
+
+    return;
+}
+
+//basis tensor (outer prod of basis col and grad row)
+void bas_tens(const int i, const float g[3], float a[3][3])
+{
+//    a[i][0] = g[0];
+//    a[i][1] = g[1];
+//    a[i][2] = g[2];
+    
+    memcpy(a[i], g, 3);
     
     return;
 }
+
+
 
 /*
  ===================================
@@ -169,12 +207,12 @@ float fn_dotS(float *a, float *b)
 //strain = 0.5(u + u')
 void fn_e(float *u, float *e)
 {
-    e[0] = 5e-1f*(u[0]+u[0]);
+    e[0] = u[0];
     e[1] = 5e-1f*(u[1]+u[3]);
     e[2] = 5e-1f*(u[2]+u[6]);
-    e[3] = 5e-1f*(u[4]+u[4]);
+    e[3] = u[4];
     e[4] = 5e-1f*(u[5]+u[7]);
-    e[5] = 5e-1f*(u[8]+u[8]);
+    e[5] = u[8];
 
     return;
 }
@@ -194,7 +232,6 @@ void fn_s(float *e, float *s)
 
     return;
 }
-
 
 //energy phi = 0.5*lam*(tr(e))^2 + mu*tr(e^2)
 float fn_p(float *e)
@@ -229,10 +266,22 @@ constant float qpt_w[3] = {0.277777777777778f,0.444444444444444f,0.2777777777777
 
 /*
  ===================================
- kernels
+ indexing
  ===================================
  */
 
+//constant int idx2[8][3]  = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
+//constant int idx3[27][3] = {{0,0,0},{1,0,0},{2,0,0},{0,1,0},{1,1,0},{2,1,0},{0,2,0},{1,2,0},{2,2,0},{0,0,1},{1,0,1},{2,0,1},{0,1,1},{1,1,1},{2,1,1},{0,2,1},{1,2,1},{2,2,1},{0,0,2},{1,0,2},{2,0,2},{0,1,2},{1,1,2},{2,1,2},{0,2,2},{1,2,2},{2,2,2}};
+
+
+
+
+
+/*
+ ===================================
+ kernels
+ ===================================
+ */
 
 //init
 kernel void vtx_init(constant   float  *buf_cc,
@@ -279,7 +328,6 @@ kernel void vtx_init(constant   float  *buf_cc,
     global int   *blk_row_jj = &coo_jj[blk_row_idx];
     global float *blk_row_aa = &coo_aa[blk_row_idx];
     
-    
     //adj
     for(int adj_k=0; adj_k<3; adj_k++)
     {
@@ -313,7 +361,7 @@ kernel void vtx_init(constant   float  *buf_cc,
                     {
                         int dim_idx = 4*dim_i+dim_j;
                         
-                        blk_ii[dim_idx] = 4*vtx_idx + dim_i;
+                        blk_ii[dim_idx] = adj_bc1*4*vtx_idx + dim_i;
                         blk_jj[dim_idx] = adj_bc1*(4*adj_idx + dim_j);
                         blk_aa[dim_idx] = vtx_bc2*(vtx_idx==adj_idx)*(dim_i==dim_j);
                     }
@@ -346,9 +394,46 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //    printf("vtx %3d\n",vtx_idx);
 //    printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
     
-    
+    //pointers
     int blk_row_idx = 27*16*vtx_idx;
     global float *blk_row_aa = &coo_aa[blk_row_idx];
+    
+//    int vec_row_idx = 4*vtx_idx;
+//    global float *vec_row_uu = &vtx_uu[vec_row_idx];x
+//    global float *vec_row_ff = &vtx_ff[vec_row_idx];
+    
+    
+    
+//    struct i3 a = {1,2,4};
+//    struct i3 b = {4,5,6};
+//
+//
+//    int aa[3] = {1,2,3};
+//
+//    struct i3 d = {aa[0],aa[1],aa[2]};
+//
+//    struct i3 c = add_i3(a,d);
+//
+//    printf("%d %d %d\n", c.x, c.y, c.z);
+    
+    //index test
+    for(int i=0; i<8; i++)
+    {
+//        printf("%d | %d %d %d\n", i, idx2[i].x, idx2[i].y, idx2[i].z);
+        
+        for(int j=0; j<8; j++)
+        {
+            struct i3 a = add_i3(idx2[i], idx2[j]);
+
+            printf("%d %d | %d %d %d | %2d\n", i, j, a.x, a.y, a.z, a.x + a.y*3 + a.z*9);
+        }
+        
+        
+    }
+    
+
+    
+    
     
     //ele
     for(int ele_k=0; ele_k<2; ele_k++)
@@ -357,11 +442,11 @@ kernel void vtx_assm(constant   float  *buf_cc,
         {
             for(int ele_i=0; ele_i<2; ele_i++)
             {
-                //ref vtx
-                int ele_ref[3];
-                ele_ref[0] = vtx_pos[0] + ele_i - 1;
-                ele_ref[1] = vtx_pos[1] + ele_j - 1;
-                ele_ref[2] = vtx_pos[2] + ele_k - 1;
+//                //ref vtx
+//                int ele_ref[3];
+//                ele_ref[0] = vtx_pos[0] + ele_i - 1;
+//                ele_ref[1] = vtx_pos[1] + ele_j - 1;
+//                ele_ref[2] = vtx_pos[2] + ele_k - 1;
                 
                 int ele_idx2 = ele_i + 2*ele_j + 4*ele_k;
                 int vtx_idx2 = 7 - ele_idx2;
@@ -375,12 +460,10 @@ kernel void vtx_assm(constant   float  *buf_cc,
                     {
                         for(int qpt_i=0; qpt_i<qpt_n; qpt_i++)
                         {
-
                             float qp[3] = {qpt_x[qpt_i],qpt_x[qpt_j],qpt_x[qpt_k]};
                             float qw    = qpt_w[qpt_i]*qpt_w[qpt_j]*qpt_w[qpt_k];
 
-//                            printf("qpt [%6.4f,%6.4f,%6.4f] %6.4f\n",qp[0], qp[1], qp[2], qw);
-                            
+
                             //basis
                             float ee[8];
                             float gg[8][3];
@@ -388,13 +471,14 @@ kernel void vtx_assm(constant   float  *buf_cc,
                             bas_eval(qp, ee);
                             bas_grad(qp, gg);
                             
-//                            for(int i=0; i<8; i++)
-//                            {
-//                                printf("gg %d [%+6.4f %+6.4f %+6.4f]\n", i, gg[i][0], gg[i][1], gg[i][2]);
-//                            }
-                            
-//                            printf("vtx_gg %d [%+6.4f,%+6.4f,%+6.4f]\n", vtx_idx2, gg[vtx_idx2][0], gg[vtx_idx2][1], gg[vtx_idx2][2]);
+                            //eval
+//                            float u_h[4] = {0e0f, 0e0f, 0e0f, 0e0f};
+                        
 
+
+                            
+                            
+                            
                             //adj
                             for(int adj_k=0; adj_k<2; adj_k++)
                             {
@@ -402,43 +486,39 @@ kernel void vtx_assm(constant   float  *buf_cc,
                                 {
                                     for(int adj_i=0; adj_i<2; adj_i++)
                                     {
-                                        int adj_pos[3];
-                                        adj_pos[0] = ele_ref[0] + adj_i;
-                                        adj_pos[1] = ele_ref[1] + adj_j;
-                                        adj_pos[2] = ele_ref[2] + adj_k;
+//                                        int adj_pos[3];
+//                                        adj_pos[0] = ele_ref[0] + adj_i;
+//                                        adj_pos[1] = ele_ref[1] + adj_j;
+//                                        adj_pos[2] = ele_ref[2] + adj_k;
 
 //                                        int adj_idx = fn_idx(adj_pos, vtx_dim);                                     //global
                                         int adj_idx2 = adj_i + 2*adj_j + 4*adj_k;                                   //2x2x2
                                         int adj_idx3 = (ele_i + adj_i) + 3*(ele_j + adj_j) + 9*(ele_k + adj_k);     //3x3x3
 
-//                                        printf("   adj [%d,%d,%d] %d %d | %2d %3d\n", adj_pos[0], adj_pos[1], adj_pos[2], vtx_idx2, adj_idx2, adj_idx3, adj_idx);
                                         
-                                    
-//                                        float *g1 = gg[vtx_idx2];
-//                                        float *g2 = gg[adj_idx2];
+                                        //tensor basis
                                         
-                     
-//                                        printf("dt %d [%+6.4f,%+6.4f,%+6.4f] %d [%+6.4f,%+6.4f,%+6.4f] %+e %+e\n", vtx_idx2, g1[0], g1[1], g1[2], adj_idx2, g2[0], g2[1], g2[2], fn_dot(g1, g2),qw);
                                         
-//                                        printf("vv %d  %+6.4f %+6.4f %+6.4f\n",vtx_idx2,gg[vtx_idx2][0],gg[vtx_idx2][1],gg[vtx_idx2][2]);
-                                        
+
                                         //blk
                                         global float *blk_aa = &blk_row_aa[16*adj_idx3];
-                                          
+
                                         //write
                                         blk_aa[15] += fn_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
                                         
-                                        
-                                        
-//                                        //write all
-//                                        for(int i=0; i<16; i++)
-//                                        {
-//                                            blk_aa[i] += fn_dot(gg[vtx_idx2], gg[adj_idx2])*qw;
-//                                        }
 
-
+                                        //dims 3x3
+                                        for(int dim_i=0; dim_i<3; dim_i++)
+                                        {
+                                            for(int dim_j=0; dim_j<3; dim_j++)
+                                            {
+                                                int dim_idx = 4*dim_i+dim_j;
+                                                
+                                                blk_aa[dim_idx] = dim_idx;
+                                            }
+                                        }
                                         
-                                        
+          
                                         
 
                                     }
