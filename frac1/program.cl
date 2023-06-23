@@ -24,7 +24,7 @@ float sym_tr(float *a);
 void  sym_sq(float *a, float *b);
 float sym_dot(float *a, float *b);
 
-void  mec_e(float *u, float *e);
+void mec_e(float u[3][3], float e[6]);
 void  mec_s(float *e, float *s);
 float mec_p(float *e);
 
@@ -182,14 +182,14 @@ float sym_dot(float *a, float *b)
  */
 
 //strain = 0.5(u + u')
-void mec_e(float *u, float *e)
+void mec_e(float u[3][3], float e[6])
 {
-    e[0] = u[0];
-    e[1] = 5e-1f*(u[1]+u[3]);
-    e[2] = 5e-1f*(u[2]+u[6]);
-    e[3] = u[4];
-    e[4] = 5e-1f*(u[5]+u[7]);
-    e[5] = u[8];
+    e[0] = u[0][0];
+    e[1] = 5e-1f*(u[0][1]+u[1][0]);
+    e[2] = 5e-1f*(u[0][2]+u[2][0]);
+    e[3] = u[1][1];
+    e[4] = 5e-1f*(u[1][2]+u[2][1]);
+    e[5] = u[2][2];
     
     return;
 }
@@ -407,18 +407,32 @@ kernel void vtx_assm(constant   float  *buf_cc,
             //eval
             for(int vtx_i=0; vtx_i<8; vtx_i++)
             {
-                //grad mtx 3x3
-                for(int i=0; i<3; i++)
+                //dim
+                for(int dim_i=0; dim_i<3; dim_i++)
                 {
-                    for(int j=0; j<3; j++)
+                    for(int dim_j=0; dim_j<3; dim_j++)
                     {
-                        u_grad[i][j] += vv_u[vtx_i][i]*gg[vtx_i][j];
+                        u_grad[dim_i][dim_j] += vv_u[vtx_i][dim_i]*gg[vtx_i][dim_j];
                     }
                 }
                 
                 c_eval    += vv_u[vtx_i][3]*ee[vtx_i];
                 
             }
+            
+            
+            //strain (sym)
+            float e[6];
+            mec_e(u_grad, e);
+            
+            //split
+            
+            //energy
+            
+            //crack
+            
+            
+            
             
             
             //loop  adj vtx - dot
