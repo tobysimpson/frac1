@@ -22,12 +22,17 @@ float vec_dot(float *a, float *b);
 
 float sym_tr(float *a);
 void  sym_sq(float *a, float *b);
+float sym_det(float *a);
 float sym_dot(float *a, float *b);
 
-void mec_e(float u[3][3], float e[6]);
+void  mec_e(float u[3][3], float e[6]);
 void  mec_s(float *e, float *s);
 float mec_p(float *e);
 
+void eig_val(float a[6], float d[6]);
+void eig_vec(float a[6], float d[6], float v[6]);
+
+//constants
 constant int idx2[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 constant int idx3[27][3] = {{0,0,0},{1,0,0},{2,0,0},{0,1,0},{1,1,0},{2,1,0},{0,2,0},{1,2,0},{2,2,0},{0,0,1},{1,0,1},{2,0,1},{0,1,1},{1,1,1},{2,1,1},{0,2,1},{1,2,1},{2,2,1},{0,0,2},{1,0,2},{2,0,2},{0,1,2},{1,1,2},{2,1,2},{0,2,2},{1,2,2},{2,2,2}};
 
@@ -169,6 +174,13 @@ void sym_sq(float *a, float *b)
     return;
 }
 
+//determinant
+float sym_det(float *a)
+{
+    return a[0]*a[3]*a[5] - (a[0]*a[4]*a[4] + a[2]*a[2]*a[3] + a[1]*a[1]*a[5]) + 2e0f*a[1]*a[2]*a[4];
+}
+
+
 //sym tensor inner prod
 float sym_dot(float *a, float *b)
 {
@@ -237,6 +249,64 @@ constant float qpt_w[2] = {0.500000000000000f,0.500000000000000f};
 ////3-point gauss [0,1]
 //constant float qpt_x[3] = {0.112701665379258f,0.500000000000000f,0.887298334620742f};
 //constant float qpt_w[3] = {0.277777777777778f,0.444444444444444f,0.277777777777778f};
+
+
+/*
+ ===================================
+ eigs (sym)
+ ===================================
+ */
+
+void eig_val(float a[6], float d[6])
+{
+    float p1 = a[1]*a[1] + a[2]*a[2] + a[4]*a[4];
+    
+    //diag
+    if(p1==0e0f)
+    {
+        d[0] = a[0];
+        d[3] = a[3];
+        d[5] = a[5];
+        
+        return;
+    }
+    
+    float q = sym_tr(a)/3e0f;
+    float p2 = pown(a[0]-q,2) + pown(a[0]-q,2) + pown(a[0]-q,2) + 2e0f*p1;
+    float p = sqrt(p2/6e0f);
+    
+    //B = (A - qI)/p
+    float b[6];
+    memcpy(b, a, 6);
+    b[0] -= q;
+    b[3] -= q;
+    b[5] -= q;
+    
+    for(int i=0; i<6; i++)
+    {
+        b[i] /= p;
+    }
+    
+    float r = 5e-1f*sym_det(b);
+    
+    float phi = acos(r)/3e0f;
+    phi = (r<=-1e0f)?M_PI_F/3e0f:phi;
+    phi = (r>=+1e0f)?0e0f:phi;
+    
+    //decreasing order
+    d[2] = q + 2e0f*p*cos(phi);
+    d[0] = q + 2e0f*p*cos(phi + (2e0f*M_PI_F/3e0f));
+    d[1] = 3e0f*q - (d[0] + d[2]);
+
+    return;
+}
+
+void eig_vec(float a[6], float d[6], float v[6])
+{
+    
+    return;
+}
+
 
 /*
  ===================================
@@ -400,14 +470,14 @@ kernel void vtx_assm(constant   float  *buf_cc,
             bas_eval(qp, ee);
             bas_grad(qp, gg);
             
-            //eval soln
+            //soln
             float u_grad[3][3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
             float c_eval       = 0e0f;
             
             //eval
             for(int vtx_i=0; vtx_i<8; vtx_i++)
             {
-                //dim
+                //u_grad
                 for(int dim_i=0; dim_i<3; dim_i++)
                 {
                     for(int dim_j=0; dim_j<3; dim_j++)
@@ -415,7 +485,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                         u_grad[dim_i][dim_j] += vv_u[vtx_i][dim_i]*gg[vtx_i][dim_j];
                     }
                 }
-                
+                //c_eval
                 c_eval    += vv_u[vtx_i][3]*ee[vtx_i];
                 
             }
@@ -426,6 +496,10 @@ kernel void vtx_assm(constant   float  *buf_cc,
             mec_e(u_grad, e);
             
             //split
+            float d[6] = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+       
+            eig_val(e, d);
+            
             
             //energy
             
