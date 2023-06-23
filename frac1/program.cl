@@ -137,8 +137,6 @@ void bas_tens(int i, float g[3], float a[3][3])
     return;
 }
 
-
-
 /*
  ===================================
  linear algebra R^3
@@ -229,19 +227,16 @@ float mec_p(float *e)
  */
 
 ////1-point gauss [0,1]
-//constant int   qpt_n    = 1;
 //constant float qpt_x[1] = {5e-1f};
 //constant float qpt_w[1] = {1e+0f};
 
-////2-point gauss [0,1]
-//constant int   qpt_n    = 2;
-//constant float qpt_x[2] = {0.211324865405187f,0.788675134594813f};
-//constant float qpt_w[2] = {0.500000000000000f,0.500000000000000f};
+//2-point gauss [0,1]
+constant float qpt_x[2] = {0.211324865405187f,0.788675134594813f};
+constant float qpt_w[2] = {0.500000000000000f,0.500000000000000f};
 
-//3-point gauss [0,1]
-constant int   qpt_n    = 3;
-constant float qpt_x[3] = {0.112701665379258f,0.500000000000000f,0.887298334620742f};
-constant float qpt_w[3] = {0.277777777777778f,0.444444444444444f,0.277777777777778f};
+////3-point gauss [0,1]
+//constant float qpt_x[3] = {0.112701665379258f,0.500000000000000f,0.887298334620742f};
+//constant float qpt_w[3] = {0.277777777777778f,0.444444444444444f,0.277777777777778f};
 
 /*
  ===================================
@@ -351,18 +346,20 @@ kernel void vtx_assm(constant   float  *buf_cc,
     //    global float *vec_row_uu = &vtx_uu[vec_row_idx];x
     //    global float *vec_row_ff = &vtx_ff[vec_row_idx];
     
-    //ele
+    //loop ele
     for(int ele_i=0; ele_i<8; ele_i++)
     {
         //home vtx
         int vtx1_i = 7 - ele_i;
         
-        int vv_loc[8][3];   //local
-        int vv_idx3[8];     //3x3x3
-        int vv_pos[8][3];   //global
-        int vv_idx[8];      //global
+        //per vtx
+        int     vv_loc[8][3];   //local pos
+        int     vv_idx3[8];     //3x3x3 idx
+        int     vv_pos[8][3];   //global pos
+        int     vv_idx[8];      //global idx
+        float   vv_u[8][4];     //soln
         
-        //vtx
+        //loop vtx - eval
         for(int vtx_i=0; vtx_i<8; vtx_i++)
         {
             vv_loc[vtx_i][0] = idx2[ele_i][0] + idx2[vtx_i][0];
@@ -377,17 +374,24 @@ kernel void vtx_assm(constant   float  *buf_cc,
             
             vv_idx[vtx_i] = fn_idx(vv_pos[vtx_i], vtx_dim);
             
+            //soln
+            global float *u = &vtx_uu[4*vv_idx[vtx_i]];
+            vv_u[vtx_i][0] = u[0];
+            vv_u[vtx_i][1] = u[1];
+            vv_u[vtx_i][2] = u[2];
+            vv_u[vtx_i][3] = u[3];
+            
             
 //            printf("%2d %2d\n",vtx_idx,vv_idx[vtx_i]);
             
         }//vtx
         
         
-        //qpt
-        for(int qpt_i=0; qpt_i<27; qpt_i++)
+        //loop qpt
+        for(int qpt_i=0; qpt_i<8; qpt_i++)
         {
-            float qp[3] = {qpt_x[idx3[qpt_i][0]],qpt_x[idx3[qpt_i][1]],qpt_x[idx3[qpt_i][2]]};
-            float qw    = qpt_w[idx3[qpt_i][0]]*qpt_w[idx3[qpt_i][1]]*qpt_w[idx3[qpt_i][2]];
+            float qp[3] = {qpt_x[idx2[qpt_i][0]],qpt_x[idx2[qpt_i][1]],qpt_x[idx2[qpt_i][2]]};
+            float qw    = qpt_w[idx2[qpt_i][0]]*qpt_w[idx2[qpt_i][1]]*qpt_w[idx2[qpt_i][2]];
             
             //basis
             float ee[8];
@@ -396,8 +400,28 @@ kernel void vtx_assm(constant   float  *buf_cc,
             bas_eval(qp, ee);
             bas_grad(qp, gg);
             
+            //eval soln
+            float u_grad[3][3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
+            float c_eval       = 0e0f;
             
-            //adj vtx
+            //eval
+            for(int vtx_i=0; vtx_i<8; vtx_i++)
+            {
+                //grad mtx 3x3
+                for(int i=0; i<3; i++)
+                {
+                    for(int j=0; j<3; j++)
+                    {
+                        u_grad[i][j] += vv_u[vtx_i][i]*gg[vtx_i][j];
+                    }
+                }
+                
+                c_eval    += vv_u[vtx_i][3]*ee[vtx_i];
+                
+            }
+            
+            
+            //loop  adj vtx - dot
             for(int vtx2_i=0; vtx2_i<8; vtx2_i++)
             {
                 //blk
