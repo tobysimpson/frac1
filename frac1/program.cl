@@ -19,6 +19,9 @@ void bas_grad(float p[3], float gg[8][3]);
 void bas_tens(int i, float g[3], float a[3][3]);
 
 float vec_dot(float *a, float *b);
+float vec_norm(float *a);
+void  vec_unt(float *a);
+float vec_cross(float *a, float *b, float *c);
 
 float sym_tr(float *a);
 void  sym_sq(float *a, float *b);
@@ -30,7 +33,7 @@ void  mec_s(float *e, float *s);
 float mec_p(float *e);
 
 void eig_val(float a[6], float d[6]);
-void eig_vec(float a[6], float d[6], float v[6]);
+void eig_vec(float a[6], float d[3], float v[3][3]);
 
 //constants
 constant int idx2[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
@@ -59,6 +62,24 @@ int fn_bc2(int *pos, int *dim)
 {
     return (pos[0]==0)||(pos[1]==0)||(pos[2]==0)||(pos[0]==dim[0]-1)||(pos[1]==dim[1]-1)||(pos[2]==dim[2]-1);;
 }
+
+/*
+ ===================================
+ quadrature [0,1]
+ ===================================
+ */
+
+////1-point gauss [0,1]
+//constant float qpt_x[1] = {5e-1f};
+//constant float qpt_w[1] = {1e+0f};
+
+//2-point gauss [0,1]
+constant float qpt_x[2] = {0.211324865405187f,0.788675134594813f};
+constant float qpt_w[2] = {0.500000000000000f,0.500000000000000f};
+
+////3-point gauss [0,1]
+//constant float qpt_x[3] = {0.112701665379258f,0.500000000000000f,0.887298334620742f};
+//constant float qpt_w[3] = {0.277777777777778f,0.444444444444444f,0.277777777777778f};
 
 /*
  ===================================
@@ -154,6 +175,34 @@ float vec_dot(float *a, float *b)
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
+//vector 2-norm
+float vec_norm(float *a)
+{
+    return sqrt(vec_dot(a,a));
+}
+
+//normalize
+void vec_unt(float *a)
+{
+    float r = 1e0f/vec_norm(a);
+    
+    a[0] *= r;
+    a[1] *= r;
+    a[2] *= r;
+    
+    return;
+}
+
+//vector cross product
+float vec_cross(float *a, float *b, float *c)
+{
+    c[0] = a[1]*b[2] - a[2]*b[1];
+    c[1] = a[2]*b[0] - a[0]*b[2];
+    c[2] = a[0]*b[1] - a[1]*b[0];
+    
+    return 0e0f;
+}
+
 
 //sym trace
 float sym_tr(float *a)
@@ -234,30 +283,11 @@ float mec_p(float *e)
 
 /*
  ===================================
- quadrature [0,1]
- ===================================
- */
-
-////1-point gauss [0,1]
-//constant float qpt_x[1] = {5e-1f};
-//constant float qpt_w[1] = {1e+0f};
-
-//2-point gauss [0,1]
-constant float qpt_x[2] = {0.211324865405187f,0.788675134594813f};
-constant float qpt_w[2] = {0.500000000000000f,0.500000000000000f};
-
-////3-point gauss [0,1]
-//constant float qpt_x[3] = {0.112701665379258f,0.500000000000000f,0.887298334620742f};
-//constant float qpt_w[3] = {0.277777777777778f,0.444444444444444f,0.277777777777778f};
-
-
-/*
- ===================================
  eigs (sym)
  ===================================
  */
 
-void eig_val(float a[6], float d[6])
+void eig_val(float a[6], float d[3])
 {
     float p1 = a[1]*a[1] + a[2]*a[2] + a[4]*a[4];
     
@@ -265,8 +295,8 @@ void eig_val(float a[6], float d[6])
     if(p1==0e0f)
     {
         d[0] = a[0];
-        d[3] = a[3];
-        d[5] = a[5];
+        d[1] = a[3];
+        d[2] = a[5];
         
         return;
     }
@@ -301,8 +331,28 @@ void eig_val(float a[6], float d[6])
     return;
 }
 
-void eig_vec(float a[6], float d[6], float v[6])
+void eig_vec(float a[6], float d[3], float v[3][3])
 {
+    //lam1 2x3
+    float c1[3] = {a[1], a[3]-d[0], a[4]};
+    float c2[3] = {a[2], a[4], a[5]-d[0]};
+    //lam2 1x3
+    float c3[3] = {a[0]-d[1], a[1], a[2]};
+    float c4[3] = {a[2], a[4], a[5]-d[1]};
+    //lam3 1x2
+    float c5[3] = {a[0]-d[2], a[1], a[2]};
+    float c6[3] = {a[1], a[3]-d[2], a[4]};
+    
+    //vecs
+    vec_cross(c1, c2, v[0]);
+    vec_cross(c3, c4, v[1]);
+    vec_cross(c5, c6, v[2]);
+    
+    //normalise
+    vec_unt(v[0]);
+    vec_unt(v[1]);
+    vec_unt(v[2]);
+    
     
     return;
 }
