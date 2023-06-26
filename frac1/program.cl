@@ -5,11 +5,21 @@
 //  Created by Toby Simpson on 19.06.23.
 //
 
-//params
+/*
+ ===================================
+ params
+ ===================================
+ */
+
 constant float mat_lam = 1e0f;
 constant float mat_mu  = 1e0f;
 
-//prototypes
+/*
+ ===================================
+ prototypes
+ ===================================
+ */
+
 int fn_idx(int *pos, int *dim);
 int fn_bc1(int *pos, int *dim);
 int fn_bc2(int *pos, int *dim);
@@ -21,7 +31,7 @@ void bas_tens(int i, float g[3], float a[3][3]);
 float vec_dot(float *a, float *b);
 float vec_norm(float *a);
 void  vec_unt(float *a);
-float vec_cross(float *a, float *b, float *c);
+void  vec_cross(float *a, float *b, float *c);
 
 float sym_tr(float *a);
 void  sym_sq(float *a, float *b);
@@ -34,8 +44,14 @@ float mec_p(float *e);
 
 void eig_val(float a[6], float d[6]);
 void eig_vec(float a[6], float d[3], float v[3][3]);
+void eig_a1a2(float a[6], float a1[6], float a2[6]);
 
-//constants
+/*
+ ===================================
+ constants
+ ===================================
+ */
+
 constant int idx2[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 constant int idx3[27][3] = {{0,0,0},{1,0,0},{2,0,0},{0,1,0},{1,1,0},{2,1,0},{0,2,0},{1,2,0},{2,2,0},{0,0,1},{1,0,1},{2,0,1},{0,1,1},{1,1,1},{2,1,1},{0,2,1},{1,2,1},{2,2,1},{0,0,2},{1,0,2},{2,0,2},{0,1,2},{1,1,2},{2,1,2},{0,2,2},{1,2,2},{2,2,2}};
 
@@ -75,7 +91,7 @@ int fn_bc2(int *pos, int *dim)
 
 //2-point gauss [0,1]
 constant float qpt_x[2] = {0.211324865405187f,0.788675134594813f};
-constant float qpt_w[2] = {0.500000000000000f,0.500000000000000f};
+constant float qpt_w[2] = {5e-1f,5e-1f};
 
 ////3-point gauss [0,1]
 //constant float qpt_x[3] = {0.112701665379258f,0.500000000000000f,0.887298334620742f};
@@ -165,7 +181,7 @@ void bas_tens(int i, float g[3], float a[3][3])
 
 /*
  ===================================
- linear algebra R^3
+ vector R^3
  ===================================
  */
 
@@ -194,15 +210,20 @@ void vec_unt(float *a)
 }
 
 //vector cross product
-float vec_cross(float *a, float *b, float *c)
+void vec_cross(float *a, float *b, float *c)
 {
     c[0] = a[1]*b[2] - a[2]*b[1];
     c[1] = a[2]*b[0] - a[0]*b[2];
     c[2] = a[0]*b[1] - a[1]*b[0];
     
-    return 0e0f;
+    return;
 }
 
+/*
+ ===================================
+ symmetric R^3x3
+ ===================================
+ */
 
 //sym trace
 float sym_tr(float *a)
@@ -275,7 +296,7 @@ void mec_s(float *e, float *s)
 float mec_p(float *e)
 {
     float a = sym_tr(e);
-    float *b;
+    float b[6];
     sym_sq(e, b);
     
     return 5e-1f*mat_lam*a*a + mat_mu*sym_tr(b);
@@ -283,10 +304,11 @@ float mec_p(float *e)
 
 /*
  ===================================
- eigs (sym)
+ eigs (sym 3x3)
  ===================================
  */
 
+//eigenvalues - cuppen
 void eig_val(float a[6], float d[3])
 {
     float p1 = a[1]*a[1] + a[2]*a[2] + a[4]*a[4];
@@ -331,15 +353,16 @@ void eig_val(float a[6], float d[3])
     return;
 }
 
+//eigenvectors
 void eig_vec(float a[6], float d[3], float v[3][3])
 {
-    //lam1 2x3
+    //lam1
     float c1[3] = {a[1], a[3]-d[0], a[4]};
     float c2[3] = {a[2], a[4], a[5]-d[0]};
-    //lam2 1x3
+    //lam2
     float c3[3] = {a[0]-d[1], a[1], a[2]};
     float c4[3] = {a[2], a[4], a[5]-d[1]};
-    //lam3 1x2
+    //lam3
     float c5[3] = {a[0]-d[2], a[1], a[2]};
     float c6[3] = {a[1], a[3]-d[2], a[4]};
     
@@ -356,6 +379,44 @@ void eig_vec(float a[6], float d[3], float v[3][3])
     
     return;
 }
+
+//split
+void eig_a1a2(float a[6], float a1[6], float a2[6])
+{
+    //vals, vecs
+    float d[3];
+    float v[3][3];
+    
+    //calc
+    eig_val(a, d);
+    eig_vec(a, d, v);
+    
+    //loop eigs
+    for(int i=0; i<3; i++)
+    {
+        //test
+        int b1 = (d[i]>0e0f);
+        int b2 = (d[i]<0e0f);
+        
+        //sum outer prod
+        a1[0] += b1*v[i][0]*v[i][0];
+        a1[1] += b1*v[i][0]*v[i][1];
+        a1[2] += b1*v[i][0]*v[i][2];
+        a1[3] += b1*v[i][1]*v[i][1];
+        a1[4] += b1*v[i][1]*v[i][2];
+        a1[5] += b1*v[i][2]*v[i][2];
+        
+        a2[0] += b2*v[i][0]*v[i][0];
+        a2[1] += b2*v[i][0]*v[i][1];
+        a2[2] += b2*v[i][0]*v[i][2];
+        a2[3] += b2*v[i][1]*v[i][1];
+        a2[4] += b2*v[i][1]*v[i][2];
+        a2[5] += b2*v[i][2]*v[i][2];
+    }
+        
+    return;
+}
+
 
 
 /*
@@ -540,23 +601,21 @@ kernel void vtx_assm(constant   float  *buf_cc,
                 
             }
             
-            
             //strain (sym)
             float e[6];
             mec_e(u_grad, e);
             
+            //pos,neg
+            float e1[6] = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+            float e2[6] = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+            
             //split
-            float d[6] = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
-       
-            eig_val(e, d);
+            eig_a1a2(e, e1, e2);
             
             
             //energy
             
             //crack
-            
-            
-            
             
             
             //loop  adj vtx - dot
