@@ -259,7 +259,7 @@ float sym_tip(float *a, float *b)
     return a[0]*b[0] + 2e0f*a[1]*b[1] + 2e0f*a[2]*b[2] + a[3]*b[3] + 2e0f*a[4]*b[4] + a[5]*b[5];
 }
 
-//sym squared
+//sym scalar mult
 void sym_smul(float a, float s[6])
 {
     s[0] *= a;
@@ -594,18 +594,18 @@ kernel void vtx_assm(constant   float  *buf_cc,
         
         
         //loop qpt
-        for(int qpt_i=0; qpt_i<8; qpt_i++)
+        for(int qpt_i=0; qpt_i<27; qpt_i++)
         {
-            float qp[3] = {qpt_x[0],qpt_x[0],qpt_x[0]};
-            float qw    = qpt_w[0]*qpt_w[0]*qpt_w[0];
+//            float qp[3] = {qpt_x[0],qpt_x[0],qpt_x[0]};
+//            float qw    = qpt_w[0]*qpt_w[0]*qpt_w[0];
             
 //            //2pt
 //            float qp[3] = {qpt_x[idx2[qpt_i][0]],qpt_x[idx2[qpt_i][1]],qpt_x[idx2[qpt_i][2]]};
 //            float qw    = qpt_w[idx2[qpt_i][0]]*qpt_w[idx2[qpt_i][1]]*qpt_w[idx2[qpt_i][2]];
             
-//            //3pt
-//            float qp[3] = {qpt_x[idx3[qpt_i][0]],qpt_x[idx3[qpt_i][1]],qpt_x[idx3[qpt_i][2]]};
-//            float qw    = qpt_w[idx3[qpt_i][0]]*qpt_w[idx3[qpt_i][1]]*qpt_w[idx3[qpt_i][2]];
+            //3pt
+            float qp[3] = {qpt_x[idx3[qpt_i][0]],qpt_x[idx3[qpt_i][1]],qpt_x[idx3[qpt_i][2]]};
+            float qw    = qpt_w[idx3[qpt_i][0]]*qpt_w[idx3[qpt_i][1]]*qpt_w[idx3[qpt_i][2]];
             
             //basis
             float ee[8];
@@ -721,7 +721,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                 }
                 
                 //cc
-//                blk_aa[15] += vec_dot(gg[vtx1_i], gg[vtx2_i])*qw;
+                blk_aa[15] += vec_dot(gg[vtx1_i], gg[vtx2_i])*qw;
                 
                 
             } //vtx
