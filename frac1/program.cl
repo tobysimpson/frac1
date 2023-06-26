@@ -26,17 +26,19 @@ int fn_bc2(int *pos, int *dim);
 
 void bas_eval(float p[3], float ee[8]);
 void bas_grad(float p[3], float gg[8][3]);
-void bas_tens(int i, float g[3], float a[3][3]);
 
 float vec_dot(float *a, float *b);
 float vec_norm(float *a);
 void  vec_unt(float *a);
 void  vec_cross(float *a, float *b, float *c);
+void  vec_out(float v[3], float s[6]);
 
 float sym_tr(float *a);
 void  sym_sq(float *a, float *b);
 float sym_det(float *a);
-float sym_dot(float *a, float *b);
+float sym_tip(float *a, float *b);
+void  sym_smul(float a, float s[6]);
+void  sym_add(float s1[6], float s2[6]);
 
 void  mec_e(float u[3][3], float e[6]);
 void  mec_s(float *e, float *s);
@@ -167,18 +169,6 @@ void bas_grad(float p[3], float gg[8][3])
     return;
 }
 
-//basis tensor (outer prod of basis col and grad row)
-void bas_tens(int i, float g[3], float a[3][3])
-{
-    //    a[i][0] = g[0];
-    //    a[i][1] = g[1];
-    //    a[i][2] = g[2];
-    
-    memcpy(a[i], g, 3);
-    
-    return;
-}
-
 /*
  ===================================
  vector R^3
@@ -219,6 +209,19 @@ void vec_cross(float *a, float *b, float *c)
     return;
 }
 
+//outer product
+void  vec_out(float v[3], float s[6])
+{
+    s[0] = v[0]*v[0];
+    s[1] = v[0]*v[1];
+    s[2] = v[0]*v[2];
+    s[3] = v[1]*v[1];
+    s[4] = v[1]*v[2];
+    s[5] = v[2]*v[2];
+    
+    return;
+}
+
 /*
  ===================================
  symmetric R^3x3
@@ -250,11 +253,36 @@ float sym_det(float *a)
     return a[0]*a[3]*a[5] - (a[0]*a[4]*a[4] + a[2]*a[2]*a[3] + a[1]*a[1]*a[5]) + 2e0f*a[1]*a[2]*a[4];
 }
 
-
 //sym tensor inner prod
-float sym_dot(float *a, float *b)
+float sym_tip(float *a, float *b)
 {
     return a[0]*b[0] + 2e0f*a[1]*b[1] + 2e0f*a[2]*b[2] + a[3]*b[3] + 2e0f*a[4]*b[4] + a[5]*b[5];
+}
+
+//sym squared
+void sym_smul(float a, float s[6])
+{
+    s[0] *= a;
+    s[1] *= a;
+    s[2] *= a;
+    s[3] *= a;
+    s[4] *= a;
+    s[5] *= a;
+
+    return;
+}
+
+//sym sum onto s1
+void sym_add(float s1[6], float s2[6])
+{
+    s1[0] += s2[0];
+    s1[1] += s2[1];
+    s1[2] += s2[2];
+    s1[3] += s2[3];
+    s1[4] += s2[4];
+    s1[5] += s2[5];
+
+    return;
 }
 
 /*
@@ -519,18 +547,18 @@ kernel void vtx_assm(constant   float  *buf_cc,
     //    printf("vtx %3d\n",vtx_idx);
     //    printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
     
-    //pointers
+    //pointers K, U, F
     int blk_row_idx = 27*16*vtx_idx;
     global float *blk_row_aa = &coo_aa[blk_row_idx];
     
-    //    int vec_row_idx = 4*vtx_idx;
-    //    global float *vec_row_uu = &vtx_uu[vec_row_idx];x
-    //    global float *vec_row_ff = &vtx_ff[vec_row_idx];
+    int vec_row_idx = 4*vtx_idx;
+    global float *vec_row_uu = &vtx_uu[vec_row_idx];
+    global float *vec_row_ff = &vtx_ff[vec_row_idx];
     
     //loop ele
     for(int ele_i=0; ele_i<8; ele_i++)
     {
-        //home vtx
+        //vtx1 (blk row)
         int vtx1_i = 7 - ele_i;
         
         //per vtx
@@ -562,17 +590,22 @@ kernel void vtx_assm(constant   float  *buf_cc,
             vv_u[vtx_i][2] = u[2];
             vv_u[vtx_i][3] = u[3];
             
-            
-//            printf("%2d %2d\n",vtx_idx,vv_idx[vtx_i]);
-            
         }//vtx
         
         
         //loop qpt
         for(int qpt_i=0; qpt_i<8; qpt_i++)
         {
-            float qp[3] = {qpt_x[idx2[qpt_i][0]],qpt_x[idx2[qpt_i][1]],qpt_x[idx2[qpt_i][2]]};
-            float qw    = qpt_w[idx2[qpt_i][0]]*qpt_w[idx2[qpt_i][1]]*qpt_w[idx2[qpt_i][2]];
+            float qp[3] = {qpt_x[0],qpt_x[0],qpt_x[0]};
+            float qw    = qpt_w[0]*qpt_w[0]*qpt_w[0];
+            
+//            //2pt
+//            float qp[3] = {qpt_x[idx2[qpt_i][0]],qpt_x[idx2[qpt_i][1]],qpt_x[idx2[qpt_i][2]]};
+//            float qw    = qpt_w[idx2[qpt_i][0]]*qpt_w[idx2[qpt_i][1]]*qpt_w[idx2[qpt_i][2]];
+            
+//            //3pt
+//            float qp[3] = {qpt_x[idx3[qpt_i][0]],qpt_x[idx3[qpt_i][1]],qpt_x[idx3[qpt_i][2]]};
+//            float qw    = qpt_w[idx3[qpt_i][0]]*qpt_w[idx3[qpt_i][1]]*qpt_w[idx3[qpt_i][2]];
             
             //basis
             float ee[8];
@@ -597,47 +630,98 @@ kernel void vtx_assm(constant   float  *buf_cc,
                     }
                 }
                 //c_eval
-                c_eval    += vv_u[vtx_i][3]*ee[vtx_i];
-                
+                c_eval += vv_u[vtx_i][3]*ee[vtx_i];
             }
             
-            //strain (sym)
-            float e[6];
-            mec_e(u_grad, e);
+            // notation
+            // e/s/p = strain/stress/energy
+            // h/i/j = mesh/basis i/basis j
+            // 1/2   = pos/neg
             
-            //pos,neg
-            float e1[6] = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
-            float e2[6] = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+            
+            //strain (sym)
+            float eh[6];
+            mec_e(u_grad, eh);
             
             //split
-            eig_a1a2(e, e1, e2);
+            float eh1[6] = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+            float eh2[6] = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+            eig_a1a2(eh, eh1, eh2);
             
+            //stress
+            float sh1[6] = {0e0f};
+            float sh2[6] = {0e0f};
+            mec_s(eh1, sh1);
+            mec_s(eh2, sh2);
             
             //energy
+            float ph1 = mec_p(eh1);
             
             //crack
+            float c1 = pown(1e0f - c_eval, 2);
+            float c2 = 2e0f*(c_eval - 1e0f);
             
-            
-            //loop  adj vtx - dot
+        
+            //loop vtx2 (blk col)
             for(int vtx2_i=0; vtx2_i<8; vtx2_i++)
             {
                 //blk
                 global float *blk_aa = &blk_row_aa[16*vv_idx3[vtx2_i]];
                 
-                //write
-                blk_aa[15] += vec_dot(gg[vtx1_i], gg[vtx2_i])*qw;
+                //dims 3x3
+                for(int dim_i=0; dim_i<3; dim_i++)
+                {
+                    //grad
+                    float gi[3][3];
+                    
+                    //tensor basis
+                    gi[dim_i][0] = gg[vtx1_i][0];
+                    gi[dim_i][1] = gg[vtx1_i][1];
+                    gi[dim_i][2] = gg[vtx1_i][2];
+                    
+                    //strain
+                    float ei[6];
+                    mec_e(gi, ei);
+                    
+                    
+                    for(int dim_j=0; dim_j<3; dim_j++)
+                    {
+                        //grad
+                        float gj[3][3];
+                        
+                        //tensor basis
+                        gj[dim_j][0] = gg[vtx2_i][0];
+                        gj[dim_j][1] = gg[vtx2_i][1];
+                        gj[dim_j][2] = gg[vtx2_i][2];
+                        
+                        //strain
+                        float ej[6];
+                        mec_e(gj, ej);
+                        
+                        //split
+                        float ej1[6] = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+                        float ej2[6] = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+                        eig_a1a2(ej, ej1, ej2);
+                        
+                        //stress
+                        float sj1[6] = {0e0f};
+                        float sj2[6] = {0e0f};
+                        mec_s(ej1, sj1);
+                        mec_s(ej2, sj2);
+                        
+                        
+                        //sj1 = c1*sj1 + sj2
+                        sym_smul(c1, sj1);
+                        sym_add(sj1, sj2);
+                        
+                        //uu
+                        int dim_idx = 4*dim_i+dim_j;
+                        blk_aa[dim_idx] += sym_tip(sj1,ei)*qw;
+                    }
+                }
                 
-            
-//                //dims 3x3
-//                for(int dim_i=0; dim_i<3; dim_i++)
-//                {
-//                    for(int dim_j=0; dim_j<3; dim_j++)
-//                    {
-//                        int dim_idx = 4*dim_i+dim_j;
-//
-//                        blk_aa[dim_idx] = dim_idx;
-//                    }
-//                }
+                //cc
+//                blk_aa[15] += vec_dot(gg[vtx1_i], gg[vtx2_i])*qw;
                 
                 
             } //vtx
