@@ -544,7 +544,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
             
             vv_idx1[vtx_i] = fn_idx1(vv_pos1[vtx_i], vtx_dim1);
             
-            printf("vv_idx1 %3d\n",vv_idx1[vtx_i]);
+//            printf("vv_idx1 %3d\n",vv_idx1[vtx_i]);
             
             //soln
             global float *u = &vtx_uu[4*vv_idx1[vtx_i]];
@@ -553,7 +553,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
             vv_u[vtx_i][2] = u[2];
             vv_u[vtx_i][3] = u[3];
             
-            printf("vv_u[vtx_i] %e\n",vv_u[vtx_i][2]);
+//            printf("vv_u[vtx_i] %e\n",vv_u[vtx_i][2]);
             
         }//vtx
         
@@ -682,6 +682,10 @@ kernel void vtx_assm(constant   float  *buf_cc,
                         float8 E22 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
                         eig_A1A2(E2, &E21, &E22);
                         
+                        
+                        float3 d1 = eig_val(E1);
+                        float3 d2 = eig_val(E2);
+                        
                         //stress
                         float8 S21 = mec_S(E21);
                         float8 S22 = mec_S(E22);
@@ -692,19 +696,25 @@ kernel void vtx_assm(constant   float  *buf_cc,
                         
                         float8 T = E2;
 
-                        blk_aa[0] = T.s0;
-                        blk_aa[1] = T.s1;
-                        blk_aa[2] = T.s2;
-
-
-                        blk_aa[4] = T.s1;
-                        blk_aa[5] = T.s3;
-                        blk_aa[6] = T.s4;
-
-
-                        blk_aa[8] = T.s2;
-                        blk_aa[9] = T.s4;
-                        blk_aa[10] = T.s5;
+//                        blk_aa[0] = T.s0;
+//                        blk_aa[1] = T.s1;
+//                        blk_aa[2] = T.s2;
+//
+//                        blk_aa[4] = T.s1;
+//                        blk_aa[5] = T.s3;
+//                        blk_aa[6] = T.s4;
+//
+//                        blk_aa[8] = T.s2;
+//                        blk_aa[9] = T.s4;
+//                        blk_aa[10] = T.s5;
+                        
+                        blk_aa[3] = d1.x;
+                        blk_aa[7] = d1.y;
+                        blk_aa[11] =d1.z;
+                        
+                        blk_aa[12] = d2.x;
+                        blk_aa[13] = d2.y;
+                        blk_aa[14] = d2.z;
                         
 
                         
