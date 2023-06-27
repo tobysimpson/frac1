@@ -691,7 +691,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                         float8 S22 = mec_S(E22);
 
                         //uu
-//                        blk_aa[4*dim1+dim2] += sym_tip(E2,E1)*qw;
+                        blk_aa[4*dim1+dim2] += vec_dot(d1,d2)*qw;
 //                        blk_aa[4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, c1), S22),E1)*qw;
                         
                         float8 T = E2;
@@ -708,13 +708,13 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //                        blk_aa[9] = T.s4;
 //                        blk_aa[10] = T.s5;
                         
-                        blk_aa[3] = d1.x;
-                        blk_aa[7] = d1.y;
-                        blk_aa[11] =d1.z;
-                        
-                        blk_aa[12] = d2.x;
-                        blk_aa[13] = d2.y;
-                        blk_aa[14] = d2.z;
+//                        blk_aa[3] = d1.x;
+//                        blk_aa[7] = d1.y;
+//                        blk_aa[11] =d1.z;
+//                        
+//                        blk_aa[12] = d2.x;
+//                        blk_aa[13] = d2.y;
+//                        blk_aa[14] = d2.z;
                         
 
                         
