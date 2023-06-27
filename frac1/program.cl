@@ -89,7 +89,7 @@ int fn_idx3(int3 pos)
 //in-bounds
 int fn_bc1(int3 pos, int3 dim)
 {
-    return (pos.x>-1)*(pos.y>-1)*(pos.z>-1)*(pos.x<dim.x)*(pos.y<dim.y)*(pos.x<dim.z);
+    return (pos.x>-1)*(pos.y>-1)*(pos.z>-1)*(pos.x<dim.x)*(pos.y<dim.y)*(pos.z<dim.z);
 }
 
 //on the boundary
@@ -416,7 +416,7 @@ kernel void vtx_init(constant   float  *buf_cc,
                      global     float  *coo_aa)
 {
     int3 vtx_dim1 = {get_global_size(0),get_global_size(1),get_global_size(2)};
-    int3 vtx_pos1 = {get_global_id(0),get_global_id(1),get_global_id(2)};
+    int3 vtx_pos1 = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
     
     int vtx_idx1 = fn_idx1(vtx_pos1, vtx_dim1);
     
@@ -426,19 +426,21 @@ kernel void vtx_init(constant   float  *buf_cc,
     int vtx_bc1 = fn_bc1(vtx_pos1, vtx_dim1);
     int vtx_bc2 = fn_bc2(vtx_pos1, vtx_dim1);
     
-    global float *x = &vtx_xx[4*vtx_idx1];
+    int vec_row_idx = 4*vtx_idx1;
+    global float *x = &vtx_xx[vec_row_idx];
+    global float *u = &vtx_uu[vec_row_idx];
+    global float *f = &vtx_ff[vec_row_idx];
+    
     x[0] = (float) vtx_pos1.x;
     x[1] = (float) vtx_pos1.y;
     x[2] = (float) vtx_pos1.z;
     x[3] = (float) vtx_bc2;
     
-    global float *u = &vtx_uu[4*vtx_idx1];
     u[0] = (float) 1e-4f;
     u[1] = (float) 2;
     u[2] = (float) 3;
     u[3] = (float) vtx_bc1;
     
-    global float *f = &vtx_ff[4*vtx_idx1];
     f[0] = (float) 1;
     f[1] = (float) 2;
     f[2] = (float) 3;
@@ -452,18 +454,17 @@ kernel void vtx_init(constant   float  *buf_cc,
     
     
     //vtx
-    for(int adj_i=0; adj_i<27; adj_i++)
+    for(int adj1=0; adj1<27; adj1++)
     {
-        int3 adj_pos1 = {vtx_pos1.x + off3[adj_i].x - 1, vtx_pos1.y + off3[adj_i].y - 1, vtx_pos1.z + off3[adj_i].z - 1};
+        int3 adj_pos1 = {vtx_pos1.x + off3[adj1].x - 1, vtx_pos1.y + off3[adj1].y - 1, vtx_pos1.z + off3[adj1].z - 1};
         int  adj_idx1 = fn_idx1(adj_pos1, vtx_dim1);
         int  adj_bc1  = fn_bc1(adj_pos1, vtx_dim1);
         
-        int blk_col_idx = adj_i*16;
+        int blk_col_idx = adj1*16;
         global int   *blk_ii = &blk_row_ii[blk_col_idx];
         global int   *blk_jj = &blk_row_jj[blk_col_idx];
         global float *blk_aa = &blk_row_aa[blk_col_idx];
         
-
         //dims
         for(int dim1=0; dim1<4; dim1++)
         {
@@ -471,9 +472,9 @@ kernel void vtx_init(constant   float  *buf_cc,
             {
                 int dim_idx = 4*dim1+dim2;
                 
-                blk_ii[dim_idx] = adj_bc1*4*vtx_idx1 + dim1;
+                blk_ii[dim_idx] = adj_bc1*(4*vtx_idx1 + dim1);
                 blk_jj[dim_idx] = adj_bc1*(4*adj_idx1 + dim2);
-                blk_aa[dim_idx] = vtx_bc2*(vtx_idx1==adj_idx1)*(dim1==dim2);
+                blk_aa[dim_idx] = vtx_bc2*(vtx_idx1==adj_idx1)*(dim1==dim2);  //I
             }
         }
         
