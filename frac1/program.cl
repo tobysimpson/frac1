@@ -633,6 +633,9 @@ kernel void vtx_assm(constant   float  *buf_cc,
     float uu3[27][4];
     mem_read3(vtx_uu, uu3, vtx_pos, vtx_dim);
     
+    //coo
+    int blk_row = 27*16*vtx_idx;
+    
     //loop ele
     for(int ele1=0; ele1<8; ele1++)
     {
@@ -671,8 +674,11 @@ kernel void vtx_assm(constant   float  *buf_cc,
             //loop adj
             for(int vtx2=0; vtx2<8; vtx2++)
             {
-                printf("vtx2 %d %d\n", vtx2, vtx1);
+                int vtx_idx3 = fn_idx3(vec_vaddi(off2[ele1], off2[vtx2]));
+                int blk_col = 16*vtx_idx3;
             
+                printf("vtx2 %d %d %2d\n", vtx2, vtx1, vtx_idx3);
+                
                 //basis grad
                 float3 g1 = bas_gg[vtx1];
                 float3 g2 = bas_gg[vtx2];
@@ -684,11 +690,11 @@ kernel void vtx_assm(constant   float  *buf_cc,
                 {
                     for(int dim2=0; dim2<3; dim2++)
                     {
-                        printf("dim %d %d\n", dim1, dim2);
+//                        printf("dim %d %d\n", dim1, dim2);
                         
                         //def grad
                         float3 def1[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
-                        float3 def2[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
+//                        float3 def2[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
                         
                         //tensor basis
                         def1[dim1] = g1;
@@ -704,31 +710,48 @@ kernel void vtx_assm(constant   float  *buf_cc,
                         float8 E21, E22;
                         eig_E1E2(g2, dim2, &E21, &E22);
                         
+                        //stress
+                        float8 S21 = mec_S(E21);
+                        float8 S22 = mec_S(E22);
+                        
 //                        printf("E1 [%+e,%+e,%+e]\n", E1.s0, E1.s1, E1.s2);
 //                        printf("   [%+e,%+e,%+e]\n", E1.s1, E1.s3, E1.s4);
 //                        printf("   [%+e,%+e,%+e]\n", E1.s2, E1.s4, E1.s5);
                         
 
-                        printf("E21 [%+e,%+e,%+e]\n", E21.s0, E21.s1, E21.s2);
-                        printf("    [%+e,%+e,%+e]\n", E21.s1, E21.s3, E21.s4);
-                        printf("    [%+e,%+e,%+e]\n", E21.s2, E21.s4, E21.s5);
-
-                        printf("E22 [%+e,%+e,%+e]\n", E22.s0, E22.s1, E22.s2);
-                        printf("    [%+e,%+e,%+e]\n", E22.s1, E22.s3, E22.s4);
-                        printf("    [%+e,%+e,%+e]\n", E22.s2, E22.s4, E22.s5);
+//                        printf("E21 [%+e,%+e,%+e]\n", E21.s0, E21.s1, E21.s2);
+//                        printf("    [%+e,%+e,%+e]\n", E21.s1, E21.s3, E21.s4);
+//                        printf("    [%+e,%+e,%+e]\n", E21.s2, E21.s4, E21.s5);
+//
+//                        printf("E22 [%+e,%+e,%+e]\n", E22.s0, E22.s1, E22.s2);
+//                        printf("    [%+e,%+e,%+e]\n", E22.s1, E22.s3, E22.s4);
+//                        printf("    [%+e,%+e,%+e]\n", E22.s2, E22.s4, E22.s5);
+                        
+//                        printf("S21 [%+e,%+e,%+e]\n", S21.s0, S21.s1, S21.s2);
+//                        printf("    [%+e,%+e,%+e]\n", S21.s1, S21.s3, S21.s4);
+//                        printf("    [%+e,%+e,%+e]\n", S21.s2, S21.s4, S21.s5);
+//
+//                        printf("S22 [%+e,%+e,%+e]\n", S22.s0, S22.s1, S22.s2);
+//                        printf("    [%+e,%+e,%+e]\n", S22.s1, S22.s3, S22.s4);
+//                        printf("    [%+e,%+e,%+e]\n", S22.s2, S22.s4, S22.s5);
+                        
+                        printf("%6d %+e\n", blk_row + blk_col + 4*dim1+dim2, sym_tip(sym_add(sym_smul(S21, 1e0f), S22),E1)*qw);
+                        
+                        //write
+                        coo_aa[blk_row + blk_col + 4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, 1e0f), S22),E1)*qw;
                         
                         
                     }//dim2
                     
                 }//dim1
                 
+//                coo_aa[blk_row + blk_col + 15] += 1e0f;
+                
             }//vtx2
             
         }//qpt1
         
     }//ele1
-    
-    
     
     return;
 }
