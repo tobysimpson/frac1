@@ -335,47 +335,41 @@ float3 eig_val(float8 A)
     return d;
 }
 
-////eigenvectors
-//void eig_vec(float a[6], float d[3], float v[3][3])
-//{
-//    //lam1
-//    float c1[3] = {a[1], a[3]-d[0], a[4]};
-//    float c2[3] = {a[2], a[4], a[5]-d[0]};
-//    //lam2
-//    float c3[3] = {a[0]-d[1], a[1], a[2]};
-//    float c4[3] = {a[2], a[4], a[5]-d[1]};
-//    //lam3
-//    float c5[3] = {a[0]-d[2], a[1], a[2]};
-//    float c6[3] = {a[1], a[3]-d[2], a[4]};
-//
-//    //vecs
-//    vec_cross(c1, c2, v[0]);
-//    vec_cross(c3, c4, v[1]);
-//    vec_cross(c5, c6, v[2]);
-//
-//    //normalise
-//    vec_unit(v[0]);
-//    vec_unit(v[1]);
-//    vec_unit(v[2]);
-//
-//
-//    return;
-//}
-
 //eigenvectors
 void eig_vec(float8 A, float3 d, float3 v[3])
 {
-    float m0 = (A.s1*(A.s5-d.x)-A.s4*A.s2)/(A.s2*(A.s3-d.x)-A.s1*A.s4);
-    float m1 = (A.s1*(A.s5-d.y)-A.s4*A.s2)/(A.s2*(A.s3-d.y)-A.s1*A.s4);
-    float m2 = (A.s1*(A.s5-d.z)-A.s4*A.s2)/(A.s2*(A.s3-d.z)-A.s1*A.s4);
+    //lam1
+    float3 c1 = {A.s1, A.s3-d[0], A.s4};
+    float3 c2 = {A.s2, A.s4, A.s5-d.x};
+    //lam2
+    float3 c3 = {A.s0-d.y, A.s1, A.s2};
+    float3 c4 = {A.s2, A.s4, A.s5-d.y};
+    //lam3
+    float3 c5 = {A.s0-d.z, A.s1, A.s2};
+    float3 c6 = {A.s1, A.s3-d.z, A.s4};
 
-    //vecs
-    v[0] = vec_unit((float3){(d.x - A.s5 - A.s4*m0)/A.s2, m0, 1e0f});
-    v[1] = vec_unit((float3){(d.y - A.s5 - A.s4*m1)/A.s2, m1, 1e0f});
-    v[2] = vec_unit((float3){(d.z - A.s5 - A.s4*m2)/A.s2, m2, 1e0f});
+    //cross, normalise
+    v[0] = vec_unit(vec_cross(c1, c2));
+    v[1] = vec_unit(vec_cross(c3, c4));
+    v[2] = vec_unit(vec_cross(c5, c6));
 
     return;
 }
+
+////eigenvectors
+//void eig_vec(float8 A, float3 d, float3 v[3])
+//{
+//    float m0 = (A.s1*(A.s5-d.x)-A.s4*A.s2)/(A.s2*(A.s3-d.x)-A.s1*A.s4);
+//    float m1 = (A.s1*(A.s5-d.y)-A.s4*A.s2)/(A.s2*(A.s3-d.y)-A.s1*A.s4);
+//    float m2 = (A.s1*(A.s5-d.z)-A.s4*A.s2)/(A.s2*(A.s3-d.z)-A.s1*A.s4);
+//
+//    //vecs
+//    v[0] = vec_unit((float3){(d.x - A.s5 - A.s4*m0)/A.s2, m0, 1e0f});
+//    v[1] = vec_unit((float3){(d.y - A.s5 - A.s4*m1)/A.s2, m1, 1e0f});
+//    v[2] = vec_unit((float3){(d.z - A.s5 - A.s4*m2)/A.s2, m2, 1e0f});
+//
+//    return;
+//}
 
 
 //split
@@ -391,13 +385,14 @@ void eig_A1A2(float8 A, float8 *A1, float8 *A2)
     
 //    A1 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
     
-    sym_add(*A1, (d.x>0e0f)*d.x*vec_out(v[0]));
-    sym_add(*A1, (d.y>0e0f)*d.y*vec_out(v[1]));
-    sym_add(*A1, (d.z>0e0f)*d.z*vec_out(v[2]));
+    *A1 = sym_add(*A1, sym_smul(vec_out(v[0]),(d.x>0e0f)*d.x));
+    *A1 = sym_add(*A1, sym_smul(vec_out(v[1]),(d.y>0e0f)*d.y));
+    *A1 = sym_add(*A1, sym_smul(vec_out(v[2]),(d.z>0e0f)*d.z));
     
-    sym_add(*A2, (d.x<0e0f)*d.x*vec_out(v[0]));
-    sym_add(*A2, (d.y<0e0f)*d.y*vec_out(v[1]));
-    sym_add(*A2, (d.z<0e0f)*d.z*vec_out(v[2]));
+    *A2 = sym_add(*A2, sym_smul(vec_out(v[0]),(d.x<0e0f)*d.x));
+    *A2 = sym_add(*A2, sym_smul(vec_out(v[1]),(d.y<0e0f)*d.y));
+    *A2 = sym_add(*A2, sym_smul(vec_out(v[2]),(d.z<0e0f)*d.z));
+
         
     return;
 }
@@ -691,11 +686,11 @@ kernel void vtx_assm(constant   float  *buf_cc,
                         float8 S22 = mec_S(E22);
 
                         //uu
-                        blk_aa[4*dim1+dim2] += vec_dot(d1,d2)*qw;
-//                        blk_aa[4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, c1), S22),E1)*qw;
+//                        blk_aa[4*dim1+dim2] += vec_dot(d1,d2)*qw;
+                        blk_aa[4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, c1), S22),E1)*qw;
                         
-                        float8 T = E2;
-
+//                        float8 T = E1;
+//
 //                        blk_aa[0] = T.s0;
 //                        blk_aa[1] = T.s1;
 //                        blk_aa[2] = T.s2;
@@ -707,11 +702,11 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //                        blk_aa[8] = T.s2;
 //                        blk_aa[9] = T.s4;
 //                        blk_aa[10] = T.s5;
-                        
-//                        blk_aa[3] = d1.x;
-//                        blk_aa[7] = d1.y;
-//                        blk_aa[11] =d1.z;
 //                        
+//                        blk_aa[3]  = d1.x;
+//                        blk_aa[7]  = d1.y;
+//                        blk_aa[11] = d1.z;
+//
 //                        blk_aa[12] = d2.x;
 //                        blk_aa[13] = d2.y;
 //                        blk_aa[14] = d2.z;
