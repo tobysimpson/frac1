@@ -454,7 +454,6 @@ void eig_A1A2(float8 A, float8 *A1, float8 *A2)
     *A2 = sym_add(*A2, sym_smul(vec_out(v[0]),(d.x<0e0f)*d.x));
     *A2 = sym_add(*A2, sym_smul(vec_out(v[1]),(d.y<0e0f)*d.y));
     *A2 = sym_add(*A2, sym_smul(vec_out(v[2]),(d.z<0e0f)*d.z));
-
         
     return;
 }
@@ -627,7 +626,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
     
     int vtx_idx = fn_idx1(vtx_pos, vtx_dim);
     
-    printf("vtx %2d [%d,%d,%d]\n", vtx_idx, vtx_pos.x, vtx_pos.y, vtx_pos.z);
+//    printf("vtx %2d [%d,%d,%d]\n", vtx_idx, vtx_pos.x, vtx_pos.y, vtx_pos.z);
     
     //soln
     float uu3[27][4];
@@ -642,7 +641,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
         int3 ele_pos = off2[ele1];
         int vtx1 = 7 - ele1;
         
-        printf("ele %2d [%v3d] %d\n", ele1, ele_pos, vtx1);
+//        printf("ele %2d [%v3d] %d\n", ele1, ele_pos, vtx1);
         
         float uu2[8][4];
         mem_read2(uu3, uu2, ele_pos);
@@ -662,7 +661,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //            float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
 //            float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z];
             
-            printf("qpt %2d [%v3e] %e\n", qpt1, qp, qw);
+//            printf("qpt %2d [%v3e] %e\n", qpt1, qp, qw);
             
             //basis
             float  bas_ee[8];
@@ -677,7 +676,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                 int vtx_idx3 = fn_idx3(vec_vaddi(off2[ele1], off2[vtx2]));
                 int blk_col = 16*vtx_idx3;
             
-                printf("vtx2 %d %d %2d\n", vtx2, vtx1, vtx_idx3);
+//                printf("vtx2 %d %d %2d\n", vtx2, vtx1, vtx_idx3);
                 
                 //basis grad
                 float3 g1 = bas_gg[vtx1];
@@ -717,7 +716,6 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //                        printf("E1 [%+e,%+e,%+e]\n", E1.s0, E1.s1, E1.s2);
 //                        printf("   [%+e,%+e,%+e]\n", E1.s1, E1.s3, E1.s4);
 //                        printf("   [%+e,%+e,%+e]\n", E1.s2, E1.s4, E1.s5);
-                        
 
 //                        printf("E21 [%+e,%+e,%+e]\n", E21.s0, E21.s1, E21.s2);
 //                        printf("    [%+e,%+e,%+e]\n", E21.s1, E21.s3, E21.s4);
@@ -734,8 +732,6 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //                        printf("S22 [%+e,%+e,%+e]\n", S22.s0, S22.s1, S22.s2);
 //                        printf("    [%+e,%+e,%+e]\n", S22.s1, S22.s3, S22.s4);
 //                        printf("    [%+e,%+e,%+e]\n", S22.s2, S22.s4, S22.s5);
-                        
-                        printf("%6d %+e\n", blk_row + blk_col + 4*dim1+dim2, sym_tip(sym_add(sym_smul(S21, 1e0f), S22),E1)*qw);
                         
                         //write
                         coo_aa[blk_row + blk_col + 4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, 1e0f), S22),E1)*qw;
