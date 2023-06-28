@@ -93,6 +93,7 @@ float  mec_p(float8 E);
 float3 eig_val(float8 A);
 void   eig_vec(float8 A, float3 d, float3 v[3]);
 void   eig_A1A2(float8 A, float8 *A1, float8 *A2);
+void   eig_E1E2(float3 g, int dim, float8 *E1, float8 *E2);
 
 void mem_read3(global float *buf, float uu[27][4], int3 pos, int3 dim);
 void mem_read2(float uu3[27][4], float uu2[8][4], int3 ref);
@@ -334,7 +335,7 @@ float8 sym_add(float8 A, float8 B)
 //strain, g[0] = [u0_x, u0_y u0_z]
 float8 mec_E(float3 g[3])
 {
-    return (float8){g[0].x, 5e-1f*g[0].y+g[1].x, 5e-1f*g[0].z+g[2].x, g[1].y, 5e-1f*g[1].z+g[2].y, g[2].z, 0e0f, 0e0f};;
+    return (float8){g[0].x, 5e-1f*(g[0].y+g[1].x), 5e-1f*(g[0].z+g[2].x), g[1].y, 5e-1f*(g[1].z+g[2].y), g[2].z, 0e0f, 0e0f};
 }
 
 //stress pk2 = lam*tr(e)*I + 2*mu*e
@@ -425,9 +426,9 @@ void eig_vec(float8 A, float3 d, float3 v[3])
     float m2 = (A.s1*(A.s5-d.z)-A.s4*A.s2)/(A.s2*(A.s3-d.z)-A.s1*A.s4);
 
     //vecs
-    v[0] = vec_unit((float3){(d.x - A.s5 - A.s4*m0)/A.s2, m0, 1e0f});
-    v[1] = vec_unit((float3){(d.y - A.s5 - A.s4*m1)/A.s2, m1, 1e0f});
-    v[2] = vec_unit((float3){(d.z - A.s5 - A.s4*m2)/A.s2, m2, 1e0f});
+    v[0] = vec_unit((float3){(d.x - A.s5 - A.s4*m0), A.s2*m0, A.s2});
+    v[1] = vec_unit((float3){(d.y - A.s5 - A.s4*m1), A.s2*m1, A.s2});
+    v[2] = vec_unit((float3){(d.z - A.s5 - A.s4*m2), A.s2*m2, A.s2});
 
     return;
 }
@@ -455,6 +456,34 @@ void eig_A1A2(float8 A, float8 *A1, float8 *A2)
     *A2 = sym_add(*A2, sym_smul(vec_out(v[2]),(d.z<0e0f)*d.z));
 
         
+    return;
+}
+
+
+//split direct from basis gradient and dim
+void eig_E1E2(float3 g, int dim, float8 *E1, float8 *E2)
+{
+    float n = vec_norm(g);
+    
+    //vals
+    float d0[3] = {5e-1*(g.x - n), 5e-1*(g.y - n), 5e-1*(g.z - n)};
+    float d1[3] = {5e-1*(g.x + n), 5e-1*(g.y + n), 5e-1*(g.z + n)};
+    
+    //vecs
+    float3 v0[3];
+    v0[0] = vec_unit((float3){g.x - n, g.y, g.z});
+    v0[1] = vec_unit((float3){g.x, g.y - n, g.z});
+    v0[2] = vec_unit((float3){-g.x*(g.z + n), -g.y*(g.z + n), g.x*g.x + g.y*g.y});
+    
+    float3 v1[3];
+    v1[0] = vec_unit((float3){g.x + n, g.y, g.z});
+    v1[1] = vec_unit((float3){g.x, g.y + n, g.z});
+    v1[2] = vec_unit((float3){-g.x*(g.z - n), -g.y*(g.z - n), g.x*g.x + g.y*g.y});
+    
+    //select
+    *E1 = sym_smul(vec_out(v0[dim]),(d0[dim]>0e0f)*d0[dim]) + sym_smul(vec_out(v1[dim]),(d1[dim]>0e0f)*d1[dim]);
+    *E2 = sym_smul(vec_out(v0[dim]),(d0[dim]<0e0f)*d0[dim]) + sym_smul(vec_out(v1[dim]),(d1[dim]<0e0f)*d1[dim]);
+    
     return;
 }
 
@@ -604,7 +633,6 @@ kernel void vtx_assm(constant   float  *buf_cc,
     float uu3[27][4];
     mem_read3(vtx_uu, uu3, vtx_pos, vtx_dim);
     
-    
     //loop ele
     for(int ele1=0; ele1<8; ele1++)
     {
@@ -649,8 +677,8 @@ kernel void vtx_assm(constant   float  *buf_cc,
                 float3 g1 = bas_gg[vtx1];
                 float3 g2 = bas_gg[vtx2];
                 
-                printf("g1 [%v3+e]\n",g1);
-                printf("g2 [%v3+e]\n",g2);
+//                printf("g1 [%v3+e]\n",g1);
+//                printf("g2 [%v3+e]\n",g2);
 
                 for(int dim1=0; dim1<3; dim1++)
                 {
@@ -664,27 +692,30 @@ kernel void vtx_assm(constant   float  *buf_cc,
                         
                         //tensor basis
                         def1[dim1] = g1;
-                        def2[dim2] = g2;
-                        
+
 //                        printf("def1 [%v3+e]\n",def1[0]);
 //                        printf("     [%v3+e]\n",def1[1]);
 //                        printf("     [%v3+e]\n",def1[2]);
                         
-//                        printf("def2 [%v3+e]\n",def2[0]);
-//                        printf("     [%v3+e]\n",def2[1]);
-//                        printf("     [%v3+e]\n",def2[2]);
-                        
                         //strain
                         float8 E1 = mec_E(def1);
-                        float8 E2 = mec_E(def2);
+                        
+                        //split
+                        float8 E21, E22;
+                        eig_E1E2(g2, dim2, &E21, &E22);
                         
 //                        printf("E1 [%+e,%+e,%+e]\n", E1.s0, E1.s1, E1.s2);
 //                        printf("   [%+e,%+e,%+e]\n", E1.s1, E1.s3, E1.s4);
 //                        printf("   [%+e,%+e,%+e]\n", E1.s2, E1.s4, E1.s5);
                         
-//                        printf("E2 [%+e,%+e,%+e]\n", E2.s0, E2.s1, E2.s2);
-//                        printf("   [%+e,%+e,%+e]\n", E2.s1, E2.s3, E2.s4);
-//                        printf("   [%+e,%+e,%+e]\n", E2.s2, E2.s4, E2.s5);
+
+                        printf("E21 [%+e,%+e,%+e]\n", E21.s0, E21.s1, E21.s2);
+                        printf("    [%+e,%+e,%+e]\n", E21.s1, E21.s3, E21.s4);
+                        printf("    [%+e,%+e,%+e]\n", E21.s2, E21.s4, E21.s5);
+
+                        printf("E22 [%+e,%+e,%+e]\n", E22.s0, E22.s1, E22.s2);
+                        printf("    [%+e,%+e,%+e]\n", E22.s1, E22.s3, E22.s4);
+                        printf("    [%+e,%+e,%+e]\n", E22.s2, E22.s4, E22.s5);
                         
                         
                     }//dim2
