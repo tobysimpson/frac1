@@ -6,7 +6,39 @@
 //
 
 
+//if you don't have opencl uncomment this:
+/*
 
+struct int3
+{
+    int x;
+    int y;
+    int z;
+};
+typedef struct int3 int3;
+
+struct float3
+{
+    float x;
+    float y;
+    float z;
+};
+typedef struct float3 float3;
+
+struct float8
+{
+    float s0;
+    float s1;
+    float s2;
+    float s3;
+    float s4;
+    float s5;
+    float s6;
+    float s7;
+};
+typedef struct float8 float8;
+
+ */
 
 /*
  ===================================
@@ -38,7 +70,13 @@ float  vec_norm(float3 a);
 float3 vec_unit(float3 a);
 float3 vec_cross(float3 a, float3 b);
 float8 vec_out(float3 v);
-float3 vec_add(float3 a, float3 b);
+
+float3 vec_vaddf(float3 a, float3 b);
+float3 vec_saddf(float3 a, float b);
+
+int3   vec_vaddi(int3 a, int3 b);
+int3   vec_saddi(int3 a, int b);
+
 float3 vec_smul(float3 a, float b);
 
 float  sym_tr(float8 A);
@@ -55,6 +93,9 @@ float  mec_p(float8 E);
 float3 eig_val(float8 A);
 void   eig_vec(float8 A, float3 d, float3 v[3]);
 void   eig_A1A2(float8 A, float8 *A1, float8 *A2);
+
+void mem_read3(global float *buf, float uu[27][4], int3 pos, int3 dim);
+void mem_read2(float uu3[27][4], float uu2[8][4], int3 ref);
 
 /*
  ===================================
@@ -77,11 +118,13 @@ int fn_idx1(int3 pos, int3 dim)
     return pos.x + pos.y*dim.x + pos.z*dim.x*dim.y;
 }
 
+//index 2x2x2
 int fn_idx2(int3 pos)
 {
     return pos.x + pos.y*2 + pos.z*4;
 }
 
+//index 3x3x3
 int fn_idx3(int3 pos)
 {
     return pos.x + pos.y*3 + pos.z*9;
@@ -207,9 +250,24 @@ float8 vec_out(float3 v)
     return (float8){v.x*v.x, v.x*v.y, v.x*v.z, v.y*v.y, v.y*v.z, v.z*v.z, 0e0f, 0e0f};
 }
 
-float3 vec_add(float3 a, float3 b)
+float3 vec_vaddf(float3 a, float3 b)
 {
     return (float3){a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
+float3 vec_saddf(float3 a, float b)
+{
+    return (float3){a.x + b, a.y + b, a.z + b};
+}
+
+int3 vec_vaddi(int3 a, int3 b)
+{
+    return (int3){a.x + b.x, a.y + b.y, a.z + b.z};
+}
+
+int3 vec_saddi(int3 a, int b)
+{
+    return (int3){a.x + b, a.y + b, a.z + b};
 }
 
 float3 vec_smul(float3 a, float b)
@@ -335,41 +393,41 @@ float3 eig_val(float8 A)
     return d;
 }
 
-//eigenvectors
-void eig_vec(float8 A, float3 d, float3 v[3])
-{
-    //lam1
-    float3 c1 = {A.s1, A.s3-d[0], A.s4};
-    float3 c2 = {A.s2, A.s4, A.s5-d.x};
-    //lam2
-    float3 c3 = {A.s0-d.y, A.s1, A.s2};
-    float3 c4 = {A.s2, A.s4, A.s5-d.y};
-    //lam3
-    float3 c5 = {A.s0-d.z, A.s1, A.s2};
-    float3 c6 = {A.s1, A.s3-d.z, A.s4};
-
-    //cross, normalise
-    v[0] = vec_unit(vec_cross(c1, c2));
-    v[1] = vec_unit(vec_cross(c3, c4));
-    v[2] = vec_unit(vec_cross(c5, c6));
-
-    return;
-}
-
 ////eigenvectors
 //void eig_vec(float8 A, float3 d, float3 v[3])
 //{
-//    float m0 = (A.s1*(A.s5-d.x)-A.s4*A.s2)/(A.s2*(A.s3-d.x)-A.s1*A.s4);
-//    float m1 = (A.s1*(A.s5-d.y)-A.s4*A.s2)/(A.s2*(A.s3-d.y)-A.s1*A.s4);
-//    float m2 = (A.s1*(A.s5-d.z)-A.s4*A.s2)/(A.s2*(A.s3-d.z)-A.s1*A.s4);
+//    //lam1
+//    float3 c1 = {A.s1, A.s3-d.x, A.s4};
+//    float3 c2 = {A.s2, A.s4, A.s5-d.x};
+//    //lam2
+//    float3 c3 = {A.s0-d.y, A.s1, A.s2};
+//    float3 c4 = {A.s2, A.s4, A.s5-d.y};
+//    //lam3
+//    float3 c5 = {A.s0-d.z, A.s1, A.s2};
+//    float3 c6 = {A.s1, A.s3-d.z, A.s4};
 //
-//    //vecs
-//    v[0] = vec_unit((float3){(d.x - A.s5 - A.s4*m0)/A.s2, m0, 1e0f});
-//    v[1] = vec_unit((float3){(d.y - A.s5 - A.s4*m1)/A.s2, m1, 1e0f});
-//    v[2] = vec_unit((float3){(d.z - A.s5 - A.s4*m2)/A.s2, m2, 1e0f});
+//    //cross, normalise
+//    v[0] = vec_unit(vec_cross(c1, c2));
+//    v[1] = vec_unit(vec_cross(c3, c4));
+//    v[2] = vec_unit(vec_cross(c5, c6));
 //
 //    return;
 //}
+
+//eigenvectors
+void eig_vec(float8 A, float3 d, float3 v[3])
+{
+    float m0 = (A.s1*(A.s5-d.x)-A.s4*A.s2)/(A.s2*(A.s3-d.x)-A.s1*A.s4);
+    float m1 = (A.s1*(A.s5-d.y)-A.s4*A.s2)/(A.s2*(A.s3-d.y)-A.s1*A.s4);
+    float m2 = (A.s1*(A.s5-d.z)-A.s4*A.s2)/(A.s2*(A.s3-d.z)-A.s1*A.s4);
+
+    //vecs
+    v[0] = vec_unit((float3){(d.x - A.s5 - A.s4*m0)/A.s2, m0, 1e0f});
+    v[1] = vec_unit((float3){(d.y - A.s5 - A.s4*m1)/A.s2, m1, 1e0f});
+    v[2] = vec_unit((float3){(d.z - A.s5 - A.s4*m2)/A.s2, m2, 1e0f});
+
+    return;
+}
 
 
 //split
@@ -397,7 +455,50 @@ void eig_A1A2(float8 A, float8 *A1, float8 *A2)
     return;
 }
 
+/*
+ ===================================
+ memory
+ ===================================
+ */
 
+//read 3x3x3 fom buffer
+void mem_read3(global float *buf, float uu3[27][4], int3 pos, int3 dim)
+{
+    for(int i=0; i<27; i++)
+    {
+        int3 adj = vec_vaddi(pos,vec_saddi(off3[i],-1));
+        int idx1 = fn_idx1(adj, dim);
+
+        printf("%2d | %d %d %d | %3d\n",i, adj.x, adj.y, adj.z, idx1);
+        
+        for(int j=0; j<4; j++)
+        {
+            uu3[i][j] = buf[idx1+j];
+        }
+    }
+    
+    return;
+}
+
+
+//read 2x2x2 from 3x3x3
+void mem_read2(float uu3[27][4], float uu2[8][4], int3 ref)
+{
+    for(int i=0; i<8; i++)
+    {
+        int3 adj = vec_vaddi(ref,off2[i]);
+        int idx3 = fn_idx3(adj);
+
+        printf("%2d | %d %d %d | %3d\n",i, adj.x, adj.y, adj.z, idx3);
+        
+        for(int j=0; j<4; j++)
+        {
+            uu2[i][j] = uu3[idx3][j];
+        }
+    }
+    
+    return;
+}
 
 /*
  ===================================
@@ -422,7 +523,7 @@ kernel void vtx_init(constant   float  *buf_cc,
     //    printf("vtx_idx1 %3d\n",vtx_idx);
     //    printf("vtx_pos1 [%d,%d,%d]\n", vtx_pos1[0], vtx_pos1[1], vtx_pos1[2]);
     
-    int vtx_bc1 = fn_bc1(vtx_pos1, vtx_dim1);
+//    int vtx_bc1 = fn_bc1(vtx_pos1, vtx_dim1);
     int vtx_bc2 = fn_bc2(vtx_pos1, vtx_dim1);
     
     int vec_row_idx = 4*vtx_idx1;
@@ -435,15 +536,15 @@ kernel void vtx_init(constant   float  *buf_cc,
     x[2] = (float) vtx_pos1.z;
     x[3] = (float) vtx_bc2;
     
-    u[0] = (float) 1;
-    u[1] = (float) 2;
-    u[2] = (float) 3;
-    u[3] = (float) 4;
+    u[0] = 1e0f;
+    u[1] = 1e0f;
+    u[2] = 1e0f;
+    u[3] = 1e0f;
     
-    f[0] = (float) 2;
-    f[1] = (float) 4;
-    f[2] = (float) 6;
-    f[3] = (float) 8;
+    f[0] = 0e0f;
+    f[1] = 0e0f;
+    f[2] = 0e0f;
+    f[3] = 0e0f;
     
     
     int blk_row_idx = 27*16*vtx_idx1;
@@ -482,8 +583,40 @@ kernel void vtx_init(constant   float  *buf_cc,
 }
 
 
+
 //assemble
 kernel void vtx_assm(constant   float  *buf_cc,
+                     global     float  *vtx_xx,
+                     global     float  *vtx_uu,
+                     global     float  *vtx_ff,
+                     global     int    *coo_ii,
+                     global     int    *coo_jj,
+                     global     float  *coo_aa)
+{
+    //interior only
+    int3 vtx_dim = {get_global_size(0) + 2, get_global_size(1) + 2, get_global_size(2) + 2};
+    int3 vtx_pos = {get_global_id(0)   + 1, get_global_id(1)   + 1, get_global_id(2)   + 1};
+    
+    int vtx_idx = fn_idx1(vtx_pos, vtx_dim);
+    
+    printf("vtx %3d\n",vtx_idx);
+    printf("vtx_pos [%d,%d,%d]\n", vtx_pos.x, vtx_pos.y, vtx_pos.z);
+    
+    
+    float uu3[27][4];
+    float uu2[8][4];
+    
+    mem_read3(vtx_uu, uu3, vtx_pos, vtx_dim);
+    
+    mem_read2(uu3, uu2, (int3){0,0,1});
+    
+    return;
+}
+
+/*
+
+//assemble
+kernel void vtx_assm1(constant   float  *buf_cc,
                      global     float  *vtx_xx,
                      global     float  *vtx_uu,
                      global     float  *vtx_ff,
@@ -500,6 +633,13 @@ kernel void vtx_assm(constant   float  *buf_cc,
     printf("vtx %3d\n",vtx_idx1);
     //    printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
     
+    
+    float uu3[3][3][4]
+    
+    mem_read3(vtx_uu, uu3, vtx_pos1, vtx_dim1);
+    
+    
+    
     //pointers K, U, F
     int blk_row_idx = 27*16*vtx_idx1;
     global float *blk_row_aa = &coo_aa[blk_row_idx];
@@ -513,6 +653,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
     for(int vtx1=7; vtx1>=0; vtx1--)//such a wierd bug?
     {
         //vtx1 (blk row)
+//        int vtx1 = 0x7 - ele_i; //bug
         int ele_i = 0x7 - vtx1;
         
         printf("ele  %d %d\n",ele_i, vtx1);
@@ -687,7 +828,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
 
                         //uu
 //                        blk_aa[4*dim1+dim2] += vec_dot(d1,d2)*qw;
-                        blk_aa[4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, c1), S22),E1)*qw;
+                        blk_aa[4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, 1e0f), S22),E1)*qw;
                         
 //                        float8 T = E1;
 //
@@ -702,7 +843,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //                        blk_aa[8] = T.s2;
 //                        blk_aa[9] = T.s4;
 //                        blk_aa[10] = T.s5;
-//                        
+//
 //                        blk_aa[3]  = d1.x;
 //                        blk_aa[7]  = d1.y;
 //                        blk_aa[11] = d1.z;
@@ -727,3 +868,5 @@ kernel void vtx_assm(constant   float  *buf_cc,
     
     return;
 }
+
+*/
