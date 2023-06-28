@@ -108,6 +108,25 @@ constant int3 off3[27] = {{0,0,0},{1,0,0},{2,0,0},{0,1,0},{1,1,0},{2,1,0},{0,2,0
 
 /*
  ===================================
+ quadrature [0,1]
+ ===================================
+ */
+
+//1-point gauss [0,1]
+constant float qp1 = 5e-1f;
+constant float qw1 = 1e+0f;
+
+//2-point gauss [0,1]
+constant float qp2[2] = {0.211324865405187f,0.788675134594813f};
+constant float qw2[2] = {5e-1f,5e-1f};
+
+//3-point gauss [0,1]
+constant float qp3[3] = {0.112701665379258f,0.500000000000000f,0.887298334620742f};
+constant float qw3[3] = {0.277777777777778f,0.444444444444444f,0.277777777777778f};
+
+
+/*
+ ===================================
  utilities
  ===================================
  */
@@ -142,23 +161,7 @@ int fn_bc2(int3 pos, int3 dim)
     return (pos.x==0)||(pos.y==0)||(pos.z==0)||(pos.x==dim.x-1)||(pos.y==dim.y-1)||(pos.z==dim.z-1);;
 }
 
-/*
- ===================================
- quadrature [0,1]
- ===================================
- */
 
-//1-point gauss [0,1]
-constant float qpt_x = 5e-1f;
-constant float qpt_w = 1e+0f;
-
-////2-point gauss [0,1]
-//constant float qpt_x[2] = {0.211324865405187f,0.788675134594813f};
-//constant float qpt_w[2] = {5e-1f,5e-1f};
-
-////3-point gauss [0,1]
-//constant float qpt_x[3] = {0.112701665379258f,0.500000000000000f,0.887298334620742f};
-//constant float qpt_w[3] = {0.277777777777778f,0.444444444444444f,0.277777777777778f};
 
 /*
  ===================================
@@ -469,7 +472,7 @@ void mem_read3(global float *buf, float uu3[27][4], int3 pos, int3 dim)
         int3 adj = vec_vaddi(pos,vec_saddi(off3[i],-1));
         int idx1 = fn_idx1(adj, dim);
 
-        printf("%2d | %d %d %d | %3d\n",i, adj.x, adj.y, adj.z, idx1);
+//        printf("%2d | %d %d %d | %3d\n",i, adj.x, adj.y, adj.z, idx1);
         
         for(int j=0; j<4; j++)
         {
@@ -489,7 +492,7 @@ void mem_read2(float uu3[27][4], float uu2[8][4], int3 ref)
         int3 adj = vec_vaddi(ref,off2[i]);
         int idx3 = fn_idx3(adj);
 
-        printf("%2d | %d %d %d | %3d\n",i, adj.x, adj.y, adj.z, idx3);
+//        printf("%2d | %d %d %d | %3d\n",i, adj.x, adj.y, adj.z, idx3);
         
         for(int j=0; j<4; j++)
         {
@@ -547,23 +550,19 @@ kernel void vtx_init(constant   float  *buf_cc,
     f[3] = 0e0f;
     
     
-    int blk_row_idx = 27*16*vtx_idx1;
-    global int   *blk_row_ii = &coo_ii[blk_row_idx];
-    global int   *blk_row_jj = &coo_jj[blk_row_idx];
-    global float *blk_row_aa = &coo_aa[blk_row_idx];
-    
-    
+    int blk_row = 27*16*vtx_idx1;
+
     //vtx
     for(int adj1=0; adj1<27; adj1++)
     {
-        int3 adj_pos1 = {vtx_pos1.x + off3[adj1].x - 1, vtx_pos1.y + off3[adj1].y - 1, vtx_pos1.z + off3[adj1].z - 1};
+        int3 adj_pos1 = vec_vaddi(vtx_pos1,vec_saddi(off3[adj1],-1));
         int  adj_idx1 = fn_idx1(adj_pos1, vtx_dim1);
         int  adj_bc1  = fn_bc1(adj_pos1, vtx_dim1);
         
-        int blk_col_idx = adj1*16;
-        global int   *blk_ii = &blk_row_ii[blk_col_idx];
-        global int   *blk_jj = &blk_row_jj[blk_col_idx];
-        global float *blk_aa = &blk_row_aa[blk_col_idx];
+        int blk_col = 16*adj1;
+        global int   *blk_ii = &coo_ii[blk_row + blk_col];
+        global int   *blk_jj = &coo_jj[blk_row + blk_col];
+        global float *blk_aa = &coo_aa[blk_row + blk_col];
         
         //dims
         for(int dim1=0; dim1<4; dim1++)
@@ -599,16 +598,106 @@ kernel void vtx_assm(constant   float  *buf_cc,
     
     int vtx_idx = fn_idx1(vtx_pos, vtx_dim);
     
-    printf("vtx %3d\n",vtx_idx);
-    printf("vtx_pos [%d,%d,%d]\n", vtx_pos.x, vtx_pos.y, vtx_pos.z);
+    printf("vtx %2d [%d,%d,%d]\n", vtx_idx, vtx_pos.x, vtx_pos.y, vtx_pos.z);
     
-    
+    //soln
     float uu3[27][4];
-    float uu2[8][4];
-    
     mem_read3(vtx_uu, uu3, vtx_pos, vtx_dim);
     
-    mem_read2(uu3, uu2, (int3){0,0,1});
+    
+    //loop ele
+    for(int ele1=0; ele1<8; ele1++)
+    {
+        int3 ele_pos = off2[ele1];
+        int vtx1 = 7 - ele1;
+        
+        printf("ele %2d [%v3d] %d\n", ele1, ele_pos, vtx1);
+        
+        float uu2[8][4];
+        mem_read2(uu3, uu2, ele_pos);
+        
+        //loop quad points
+        for(int qpt1=0; qpt1<1; qpt1++)
+        {
+            //1pt
+            float3 qp = (float3){qp1,qp1,qp1};
+            float  qw = qw1*qw1*qw1;
+            
+//            //2pt
+//            float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
+//            float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z];
+            
+//            //3pt
+//            float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
+//            float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z];
+            
+            printf("qpt %2d [%v3e] %e\n", qpt1, qp, qw);
+            
+            //basis
+            float  bas_ee[8];
+            float3 bas_gg[8];
+            
+            bas_eval(qp, bas_ee);
+            bas_grad(qp, bas_gg);
+            
+            //loop adj
+            for(int vtx2=0; vtx2<8; vtx2++)
+            {
+                printf("vtx2 %d %d\n", vtx2, vtx1);
+            
+                //basis grad
+                float3 g1 = bas_gg[vtx1];
+                float3 g2 = bas_gg[vtx2];
+                
+                printf("g1 [%v3+e]\n",g1);
+                printf("g2 [%v3+e]\n",g2);
+
+                for(int dim1=0; dim1<3; dim1++)
+                {
+                    for(int dim2=0; dim2<3; dim2++)
+                    {
+                        printf("dim %d %d\n", dim1, dim2);
+                        
+                        //def grad
+                        float3 def1[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
+                        float3 def2[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
+                        
+                        //tensor basis
+                        def1[dim1] = g1;
+                        def2[dim2] = g2;
+                        
+//                        printf("def1 [%v3+e]\n",def1[0]);
+//                        printf("     [%v3+e]\n",def1[1]);
+//                        printf("     [%v3+e]\n",def1[2]);
+                        
+//                        printf("def2 [%v3+e]\n",def2[0]);
+//                        printf("     [%v3+e]\n",def2[1]);
+//                        printf("     [%v3+e]\n",def2[2]);
+                        
+                        //strain
+                        float8 E1 = mec_E(def1);
+                        float8 E2 = mec_E(def2);
+                        
+//                        printf("E1 [%+e,%+e,%+e]\n", E1.s0, E1.s1, E1.s2);
+//                        printf("   [%+e,%+e,%+e]\n", E1.s1, E1.s3, E1.s4);
+//                        printf("   [%+e,%+e,%+e]\n", E1.s2, E1.s4, E1.s5);
+                        
+//                        printf("E2 [%+e,%+e,%+e]\n", E2.s0, E2.s1, E2.s2);
+//                        printf("   [%+e,%+e,%+e]\n", E2.s1, E2.s3, E2.s4);
+//                        printf("   [%+e,%+e,%+e]\n", E2.s2, E2.s4, E2.s5);
+                        
+                        
+                    }//dim2
+                    
+                }//dim1
+                
+            }//vtx2
+            
+        }//qpt1
+        
+    }//ele1
+    
+    
     
     return;
 }
@@ -631,15 +720,14 @@ kernel void vtx_assm1(constant   float  *buf_cc,
     int vtx_idx1 = fn_idx1(vtx_pos1, vtx_dim1);
     
     printf("vtx %3d\n",vtx_idx1);
-    //    printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
+    //printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
     
     
     float uu3[3][3][4]
     
     mem_read3(vtx_uu, uu3, vtx_pos1, vtx_dim1);
     
-    
-    
+
     //pointers K, U, F
     int blk_row_idx = 27*16*vtx_idx1;
     global float *blk_row_aa = &coo_aa[blk_row_idx];
@@ -672,8 +760,7 @@ kernel void vtx_assm1(constant   float  *buf_cc,
             vv_pos3[vtx_i] = (int3){off2[ele_i].x + off2[vtx_i].x, off2[ele_i].y + off2[vtx_i].y, off2[ele_i].z + off2[vtx_i].z};
             
 //            printf("%v3d\n", vv_pos3[vtx_i]);
-            
-            
+                        
             vv_idx3[vtx_i] = fn_idx3(vv_pos3[vtx_i]);
             
             vv_pos1[vtx_i] = (int3){vtx_pos1.x + vv_pos3[vtx_i].x - 1, vtx_pos1.y + vv_pos3[vtx_i].y - 1, vtx_pos1.z + vv_pos3[vtx_i].z - 1};
