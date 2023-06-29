@@ -783,7 +783,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                 float dot_e = bas_ee[vtx1]*bas_ee[vtx2];
                 float dot_g = vec_dot(bas_gg[vtx1],bas_gg[vtx2]);
                 
-//                printf("%+e\n", ph1);
+                printf("%+e\n", ph1);
                 
                 //write block cc
                 coo_aa[blk_row + blk_col + 15] += ((2e0f*ph1*dot_e) + (mat_gc*(dot_e/mat_ls + dot_g*mat_ls)) + (mat_gam*(ch1<ch0)*dot_e))*qw;
