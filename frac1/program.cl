@@ -734,7 +734,8 @@ kernel void vtx_assm(constant   float  *buf_cc,
             float8 Eh = mec_E((float3*)u1_grad);
             
             //split
-            float8 Eh1, Eh2;
+            float8 Eh1 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+            float8 Eh2 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
             eig_A1A2(Eh, &Eh1, &Eh2);
             
 //            printf("%+e %+e %+e\n", Eh1.s0, Eh1.s1, Eh1.s2);
@@ -814,7 +815,8 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //                        printf("dim %d %d\n", dim1, dim2);
 
                         //split
-                        float8 E21, E22;
+                        float8 E21 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+                        float8 E22 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
                         eig_E1E2(bas_gg[vtx2], dim2, &E21, &E22);
                         
                         //stress
