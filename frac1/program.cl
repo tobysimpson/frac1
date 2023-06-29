@@ -67,7 +67,7 @@ int fn_bc2(int3 pos, int3 dim);
 
 void bas_eval(float3 p, float ee[8]);
 void bas_grad(float3 p, float3 gg[8]);
-void bas_itpe(float uu2[8][4], float bas_ee[8], float u[4]);
+void bas_itpe(float uu2[8][4], float  bas_ee[8], float  u_eval[4]);
 void bas_itpg(float uu2[8][4], float3 bas_gg[8], float3 u_grad[4]);
 
 float  vec_dot(float3 a, float3 b);
@@ -365,7 +365,7 @@ float8 sym_add(float8 A, float8 B)
  ===================================
  */
 
-//strain, g[0] = [u0_x, u0_y u0_z]
+//strain
 float8 mec_E(float3 g[3])
 {
     return (float8){g[0].x, 5e-1f*(g[0].y+g[1].x), 5e-1f*(g[0].z+g[2].x), g[1].y, 5e-1f*(g[1].z+g[2].y), g[2].z, 0e0f, 0e0f};
@@ -383,7 +383,7 @@ float8 mec_S(float8 E)
 //energy phi = 0.5*lam*(tr(e))^2 + mu*tr(e^2)
 float mec_p(float8 E)
 {
-    return 5e-1f*mat_lam*pown(sym_tr(E),2) + mat_mu*sym_tr(sym_prod(E, E));
+    return 5e-1f*mat_lam*pown(sym_tr(E),2) + mat_mu*sym_tr(sym_prod(E,E));
 }
 
 /*
@@ -446,7 +446,7 @@ float3 eig_val(float8 A)
 //    //cross, normalise
 //    v[0] = vec_unit(vec_cross(c1, c2));
 //    v[1] = vec_unit(vec_cross(c3, c4));
-//    v[2] = vec_unit(vec_cross(c5, c6)); //v[0] x v[1]?
+//    v[2] = vec_unit(vec_cross(c5, c6));
 //
 //    return;
 //}
@@ -543,7 +543,6 @@ void mem_read3(global float *buf, float uu3[27][4], int3 pos, int3 dim)
             uu3[i][j] = buf[idx1+j];
         }
     }
-    
     return;
 }
 
@@ -605,10 +604,10 @@ kernel void vtx_init(constant   float  *buf_cc,
     x[2] = (float) vtx_pos1.z;
     x[3] = (float) vtx_bc2;
     
-    u0[0] = 1e0f;
-    u0[1] = 1e0f;
-    u0[2] = 1e0f;
-    u0[3] = 1e0f;
+    u0[0] = 0e0f;
+    u0[1] = 0e0f;
+    u0[2] = 0e0f;
+    u0[3] = 0e0f;
     
     u1[0] = 0e0f;
     u1[1] = 0e0f;
@@ -678,8 +677,9 @@ kernel void vtx_assm(constant   float  *buf_cc,
     mem_read3(vtx_u0, uu30, vtx_pos, vtx_dim);
     mem_read3(vtx_u1, uu31, vtx_pos, vtx_dim);
     
-    //coo
+    //pointers
     int blk_row = 27*16*vtx_idx;
+    int vec_row = 4*vtx_idx;
     
     //loop ele
 //    for(int ele1=0; ele1<8; ele1++)
@@ -737,8 +737,13 @@ kernel void vtx_assm(constant   float  *buf_cc,
             float8 Eh1, Eh2;
             eig_A1A2(Eh, &Eh1, &Eh2);
             
+            printf("%+e %+e %+e\n", Eh1.s0, Eh1.s1, Eh1.s2);
+            printf("%+e %+e %+e\n", Eh1.s1, Eh1.s3, Eh1.s4);
+            printf("%+e %+e %+e\n", Eh1.s2, Eh1.s4, Eh1.s5);
+            
             //stress
             float8 Sh1 = mec_S(Eh1);
+            float8 Sh2 = mec_S(Eh2);
             
             //energy
             float ph1 = mec_p(Eh1);
@@ -749,6 +754,22 @@ kernel void vtx_assm(constant   float  *buf_cc,
             float c1 = pown(1e0f - ch1, 2);
             float c2 = 2e0f*(ch1 - 1e0f);
             
+            //rhs
+            for(int dim1=0; dim1<3; dim1++)
+            {
+                //def grad
+                float3 def1[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
+
+                //tensor basis
+                def1[dim1] = bas_gg[vtx1];
+
+                //strain
+                float8 E1 = mec_E(def1);
+                
+                //write rhs
+                vtx_ff[vec_row + dim1] += sym_tip(sym_add(sym_smul(Sh1, c1), Sh2),E1)*qw;
+            }
+            
             //loop adj
             for(int vtx2=0; vtx2<8; vtx2++)
             {
@@ -757,9 +778,14 @@ kernel void vtx_assm(constant   float  *buf_cc,
             
 //                printf("vtx2 %d %d %2d\n", vtx2, vtx1, vtx_idx3);
                 
-                //basis grad
-                float3 g1 = bas_gg[vtx1];
-                float3 g2 = bas_gg[vtx2];
+                //dots
+                float dot_e = bas_ee[vtx1]*bas_ee[vtx2];
+                float dot_g = vec_dot(bas_gg[vtx1],bas_gg[vtx2]);
+                
+                printf("%+e\n", ph1);
+                
+                //write block cc
+                coo_aa[blk_row + blk_col + 15] += ((2e0f*ph1*dot_e) + (mat_gc*(dot_e/mat_ls + dot_g*mat_ls)) + (mat_gam*(ch1<ch0)*dot_e))*qw; //is the ramp correctly specified?
                 
                 //loop dim1
                 for(int dim1=0; dim1<3; dim1++)
@@ -770,17 +796,17 @@ kernel void vtx_assm(constant   float  *buf_cc,
                     float3 def1[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
 
                     //tensor basis
-                    def1[dim1] = g1;
+                    def1[dim1] = bas_gg[vtx1];
 
                     //strain
                     float8 E1 = mec_E(def1);
                     
                     //couple
-                    float uc = c2*bas_ee[vtx2]*sym_tip(Sh1,E1);
+                    float uc = c2*bas_ee[vtx2]*sym_tip(Sh1,E1)*qw;
                     
                     //write blocks uc,cu
-                    coo_aa[blk_row + blk_col + 4*dim1+3] += uc;  //uc
-                    coo_aa[blk_row + blk_col + 12+dim1]  += uc;  //cu
+//                    coo_aa[blk_row + blk_col + 4*dim1+3] += uc;  //uc
+//                    coo_aa[blk_row + blk_col + 12+dim1]  += uc;  //cu
                     
                     //loop dim2
                     for(int dim2=0; dim2<3; dim2++)
@@ -789,25 +815,18 @@ kernel void vtx_assm(constant   float  *buf_cc,
 
                         //split
                         float8 E21, E22;
-                        eig_E1E2(g2, dim2, &E21, &E22);
+                        eig_E1E2(bas_gg[vtx2], dim2, &E21, &E22);
                         
                         //stress
                         float8 S21 = mec_S(E21);
                         float8 S22 = mec_S(E22);
 
                         //write block uu
-                        coo_aa[blk_row + blk_col + 4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, c1), S22),E1)*qw;
+//                        coo_aa[blk_row + blk_col + 4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, c1), S22),E1)*qw;
                         
                     }//dim2
                     
                 }//dim1
-                
-                //dots
-                float dot_e = bas_ee[vtx1]*bas_ee[vtx2];
-                float dot_g = vec_dot(bas_gg[vtx1],bas_gg[vtx2]);
-                
-                //write block cc
-                coo_aa[blk_row + blk_col + 15] += ((2e0f*ph1*dot_e) + (mat_gc*(dot_e/mat_ls + dot_g*mat_ls)) + (mat_gam*(ch1<ch0)*dot_e))*qw;
                 
             }//vtx2
             
