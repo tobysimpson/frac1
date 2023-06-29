@@ -582,26 +582,26 @@ kernel void vtx_init(constant   float  *buf_cc,
                      global     int    *coo_jj,
                      global     float  *coo_aa)
 {
-    int3 vtx_dim1 = {get_global_size(0),get_global_size(1),get_global_size(2)};
-    int3 vtx_pos1 = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
+    int3 vtx_dim = {get_global_size(0),get_global_size(1),get_global_size(2)};
+    int3 vtx_pos = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
     
-    int vtx_idx1 = fn_idx1(vtx_pos1, vtx_dim1);
+    int vtx_idx = fn_idx1(vtx_pos, vtx_dim);
     
-    //    printf("vtx_idx1 %3d\n",vtx_idx);
-    //    printf("vtx_pos1 [%d,%d,%d]\n", vtx_pos1[0], vtx_pos1[1], vtx_pos1[2]);
+    //    printf("vtx_idx %3d\n",vtx_idx);
+    //    printf("vtx_pos [%d,%d,%d]\n", vtx_pos[0], vtx_pos[1], vtx_pos[2]);
     
 //    int vtx_bc1 = fn_bc1(vtx_pos1, vtx_dim1);
-    int vtx_bc2 = fn_bc2(vtx_pos1, vtx_dim1);
+    int vtx_bc2 = fn_bc2(vtx_pos, vtx_dim);
     
-    int vec_row_idx  = 4*vtx_idx1;
-    global float *x  = &vtx_xx[vec_row_idx];
-    global float *u0 = &vtx_u0[vec_row_idx];
-    global float *u1 = &vtx_u1[vec_row_idx];
-    global float *f  = &vtx_ff[vec_row_idx];
+    int vec_row  = 4*vtx_idx;
+    global float *x  = &vtx_xx[vec_row];
+    global float *u0 = &vtx_u0[vec_row];
+    global float *u1 = &vtx_u1[vec_row];
+    global float *f  = &vtx_ff[vec_row];
     
-    x[0] = (float) vtx_pos1.x;
-    x[1] = (float) vtx_pos1.y;
-    x[2] = (float) vtx_pos1.z;
+    x[0] = (float) vtx_pos.x;
+    x[1] = (float) vtx_pos.y;
+    x[2] = (float) vtx_pos.z;
     x[3] = (float) vtx_bc2;
     
     u0[0] = 0e0f;
@@ -620,14 +620,14 @@ kernel void vtx_init(constant   float  *buf_cc,
     f[3] = 0e0f;
     
     
-    int blk_row = 27*16*vtx_idx1;
+    int blk_row = 27*16*vtx_idx;
 
     //vtx
     for(int adj1=0; adj1<27; adj1++)
     {
-        int3 adj_pos1 = vec_vaddi(vtx_pos1,vec_saddi(off3[adj1],-1));
-        int  adj_idx1 = fn_idx1(adj_pos1, vtx_dim1);
-        int  adj_bc1  = fn_bc1(adj_pos1, vtx_dim1);
+        int3 adj_pos = vec_vaddi(vtx_pos,vec_saddi(off3[adj1],-1));
+        int  adj_idx = fn_idx1(adj_pos, vtx_dim);
+        int  adj_bc1  = fn_bc1(adj_pos, vtx_dim);
         
         int blk_col = 16*adj1;
         global int   *blk_ii = &coo_ii[blk_row + blk_col];
@@ -641,9 +641,9 @@ kernel void vtx_init(constant   float  *buf_cc,
             {
                 int dim_idx = 4*dim1+dim2;
                 
-                blk_ii[dim_idx] = adj_bc1*(4*vtx_idx1 + dim1);
-                blk_jj[dim_idx] = adj_bc1*(4*adj_idx1 + dim2);
-                blk_aa[dim_idx] = vtx_bc2*(vtx_idx1==adj_idx1)*(dim1==dim2);  //I
+                blk_ii[dim_idx] = adj_bc1*(4*vtx_idx + dim1);
+                blk_jj[dim_idx] = adj_bc1*(4*adj_idx + dim2);
+                blk_aa[dim_idx] = vtx_bc2*(vtx_idx==adj_idx)*(dim1==dim2);  //I
             }
         }
         
@@ -731,7 +731,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
             bas_itpg(uu21, bas_gg, u1_grad);
             
             //strain
-            float8 Eh = mec_E((float3*)u1_grad);
+            float8 Eh = mec_E(u1_grad); //(float3*)
             
             //split
             float8 Eh1 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
@@ -783,11 +783,11 @@ kernel void vtx_assm(constant   float  *buf_cc,
                 float dot_e = bas_ee[vtx1]*bas_ee[vtx2];
                 float dot_g = vec_dot(bas_gg[vtx1],bas_gg[vtx2]);
                 
-                printf("%+e\n", ph1);
+//                printf("%+e\n", ph1);
                 
                 //write block cc
                 coo_aa[blk_row + blk_col + 15] += ((2e0f*ph1*dot_e) + (mat_gc*(dot_e/mat_ls + dot_g*mat_ls)) + (mat_gam*(ch1<ch0)*dot_e))*qw;
-                
+            
                 //loop dim1
                 for(int dim1=0; dim1<3; dim1++)
                 {
