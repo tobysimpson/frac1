@@ -8,11 +8,9 @@
 #include <stdio.h>
 #include <OpenCL/opencl.h>
 
-
 #include "msh.h"
 #include "ocl.h"
 #include "wrt.h"
-
 
 //here
 int main(int argc, const char * argv[])
