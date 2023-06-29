@@ -34,7 +34,7 @@ void wrt_coo(struct msh_obj *msh, struct ocl_obj *ocl)
     FILE* file5 = fopen(file5_name,"wb");
   
     //map
-    void *ptr1 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_uu, CL_TRUE, CL_MAP_READ, 0,     4*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+    void *ptr1 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_u1, CL_TRUE, CL_MAP_READ, 0,     4*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
     void *ptr2 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_ff, CL_TRUE, CL_MAP_READ, 0,     4*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
     void *ptr3 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_ii, CL_TRUE, CL_MAP_READ, 0, 27*16*msh->nv_tot*sizeof(int)  , 0, NULL, NULL, &ocl->err);
     void *ptr4 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_jj, CL_TRUE, CL_MAP_READ, 0, 27*16*msh->nv_tot*sizeof(int)  , 0, NULL, NULL, &ocl->err);
@@ -55,7 +55,7 @@ void wrt_coo(struct msh_obj *msh, struct ocl_obj *ocl)
     fclose(file5);
     
     //unmap
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_uu, ptr1, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_u1, ptr1, 0, NULL, NULL);
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_ff, ptr2, 0, NULL, NULL);
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_ii, ptr3, 0, NULL, NULL);
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_jj, ptr4, 0, NULL, NULL);
@@ -112,7 +112,7 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     //map read
-    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_uu, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_u1, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
     
     fprintf(file1,"\nPOINT_DATA %zu\n", msh->nv_tot);
     fprintf(file1,"VECTORS pv1 float\n");
@@ -131,7 +131,7 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
     }
 
     //unmap read
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_uu, ptr, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_u1, ptr, 0, NULL, NULL);
     
     /*
      ===================

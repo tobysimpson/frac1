@@ -574,7 +574,8 @@ void mem_read2(float uu3[27][4], float uu2[8][4], int3 ref)
 //init
 kernel void vtx_init(constant   float  *buf_cc,
                      global     float  *vtx_xx,
-                     global     float  *vtx_uu,
+                     global     float  *vtx_u0,
+                     global     float  *vtx_u1,
                      global     float  *vtx_ff,
                      global     int    *coo_ii,
                      global     int    *coo_jj,
@@ -591,20 +592,26 @@ kernel void vtx_init(constant   float  *buf_cc,
 //    int vtx_bc1 = fn_bc1(vtx_pos1, vtx_dim1);
     int vtx_bc2 = fn_bc2(vtx_pos1, vtx_dim1);
     
-    int vec_row_idx = 4*vtx_idx1;
-    global float *x = &vtx_xx[vec_row_idx];
-    global float *u = &vtx_uu[vec_row_idx];
-    global float *f = &vtx_ff[vec_row_idx];
+    int vec_row_idx  = 4*vtx_idx1;
+    global float *x  = &vtx_xx[vec_row_idx];
+    global float *u0 = &vtx_u0[vec_row_idx];
+    global float *u1 = &vtx_u1[vec_row_idx];
+    global float *f  = &vtx_ff[vec_row_idx];
     
     x[0] = (float) vtx_pos1.x;
     x[1] = (float) vtx_pos1.y;
     x[2] = (float) vtx_pos1.z;
     x[3] = (float) vtx_bc2;
     
-    u[0] = 1e0f;
-    u[1] = 1e0f;
-    u[2] = 1e0f;
-    u[3] = 1e0f;
+    u0[0] = 1e0f;
+    u0[1] = 1e0f;
+    u0[2] = 1e0f;
+    u0[3] = 1e0f;
+    
+    u1[0] = 1e0f;
+    u1[1] = 1e0f;
+    u1[2] = 1e0f;
+    u1[3] = 1e0f;
     
     f[0] = 0e0f;
     f[1] = 0e0f;
@@ -648,7 +655,8 @@ kernel void vtx_init(constant   float  *buf_cc,
 //assemble
 kernel void vtx_assm(constant   float  *buf_cc,
                      global     float  *vtx_xx,
-                     global     float  *vtx_uu,
+                     global     float  *vtx_u0,
+                     global     float  *vtx_u1,
                      global     float  *vtx_ff,
                      global     int    *coo_ii,
                      global     int    *coo_jj,
@@ -663,8 +671,10 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //    printf("vtx %2d [%d,%d,%d]\n", vtx_idx, vtx_pos.x, vtx_pos.y, vtx_pos.z);
     
     //soln
-    float uu3[27][4];
-    mem_read3(vtx_uu, uu3, vtx_pos, vtx_dim);
+    float uu30[27][4];
+    float uu31[27][4];
+    mem_read3(vtx_u0, uu30, vtx_pos, vtx_dim);
+    mem_read3(vtx_u1, uu31, vtx_pos, vtx_dim);
     
     //coo
     int blk_row = 27*16*vtx_idx;
@@ -680,8 +690,10 @@ kernel void vtx_assm(constant   float  *buf_cc,
         printf("ele %2d [%v3d] %d\n", ele1, ele_pos, vtx1);
         
         //read soln
-        float uu2[8][4];
-        mem_read2(uu3, uu2, ele_pos);
+        float uu20[8][4];
+        float uu21[8][4];
+        mem_read2(uu30, uu20, ele_pos);
+        mem_read2(uu31, uu21, ele_pos);
         
         //loop quad points (change limit with scheme 1,8,27)
         for(int qpt1=0; qpt1<1; qpt1++)
@@ -708,14 +720,16 @@ kernel void vtx_assm(constant   float  *buf_cc,
             bas_grad(qp, bas_gg);
             
             //eval soln
-            float  u_eval[4];
-            float3 u_grad[4];
+            float  u0_eval[4];
+            float  u1_eval[4];
+            float3 u1_grad[4];
             
-            bas_itpe(uu2, bas_ee, u_eval);
-            bas_itpg(uu2, bas_gg, u_grad);
+            bas_itpe(uu20, bas_ee, u0_eval);
+            bas_itpe(uu21, bas_ee, u1_eval);
+            bas_itpg(uu21, bas_gg, u1_grad);
             
             //strain
-            float8 Eh = mec_E((float3*)u_grad);
+            float8 Eh = mec_E((float3*)u1_grad);
             
 //            printf("Eh [%+e,%+e,%+e]\n", Eh.s0, Eh.s1, Eh.s2);
 //            printf("   [%+e,%+e,%+e]\n", Eh.s1, Eh.s3, Eh.s4);
@@ -749,7 +763,8 @@ kernel void vtx_assm(constant   float  *buf_cc,
             float ph1 = mec_p(Eh1);
             
             //crack
-            float ch1 = u_eval[3];
+            float ch0 = u0_eval[3];
+            float ch1 = u0_eval[3];
             float c1 = pown(1e0f - ch1, 2);
             float c2 = 2e0f*(ch1 - 1e0f);
             
@@ -788,18 +803,14 @@ kernel void vtx_assm(constant   float  *buf_cc,
                         //strain
                         float8 E1 = mec_E(def1);
                         
+//                        printf("E1 [%+e,%+e,%+e]\n", E1.s0, E1.s1, E1.s2);
+//                        printf("   [%+e,%+e,%+e]\n", E1.s1, E1.s3, E1.s4);
+//                        printf("   [%+e,%+e,%+e]\n", E1.s2, E1.s4, E1.s5);
+                        
                         //split
                         float8 E21, E22;
                         eig_E1E2(g2, dim2, &E21, &E22);
                         
-                        //stress
-                        float8 S21 = mec_S(E21);
-                        float8 S22 = mec_S(E22);
-                        
-//                        printf("E1 [%+e,%+e,%+e]\n", E1.s0, E1.s1, E1.s2);
-//                        printf("   [%+e,%+e,%+e]\n", E1.s1, E1.s3, E1.s4);
-//                        printf("   [%+e,%+e,%+e]\n", E1.s2, E1.s4, E1.s5);
-
 //                        printf("E21 [%+e,%+e,%+e]\n", E21.s0, E21.s1, E21.s2);
 //                        printf("    [%+e,%+e,%+e]\n", E21.s1, E21.s3, E21.s4);
 //                        printf("    [%+e,%+e,%+e]\n", E21.s2, E21.s4, E21.s5);
@@ -808,6 +819,10 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //                        printf("    [%+e,%+e,%+e]\n", E22.s1, E22.s3, E22.s4);
 //                        printf("    [%+e,%+e,%+e]\n", E22.s2, E22.s4, E22.s5);
                         
+                        //stress
+                        float8 S21 = mec_S(E21);
+                        float8 S22 = mec_S(E22);
+
 //                        printf("S21 [%+e,%+e,%+e]\n", S21.s0, S21.s1, S21.s2);
 //                        printf("    [%+e,%+e,%+e]\n", S21.s1, S21.s3, S21.s4);
 //                        printf("    [%+e,%+e,%+e]\n", S21.s2, S21.s4, S21.s5);

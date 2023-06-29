@@ -29,7 +29,8 @@ struct ocl_obj
     //device memory
     cl_mem              buf_cc;
     cl_mem              vtx_xx;
-    cl_mem              vtx_uu; //sln
+    cl_mem              vtx_u0; //prior
+    cl_mem              vtx_u1; //current
     cl_mem              vtx_ff; //rhs
     
     //coo
@@ -150,7 +151,8 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
 
     //memory
     ocl->vtx_xx = clCreateBuffer(ocl->context, CL_MEM_HOST_READ_ONLY,     4*msh->nv_tot*sizeof(float), NULL, &ocl->err);
-    ocl->vtx_uu = clCreateBuffer(ocl->context, CL_MEM_HOST_READ_ONLY,     4*msh->nv_tot*sizeof(float), NULL, &ocl->err);
+    ocl->vtx_u0 = clCreateBuffer(ocl->context, CL_MEM_HOST_READ_ONLY,     4*msh->nv_tot*sizeof(float), NULL, &ocl->err);
+    ocl->vtx_u1 = clCreateBuffer(ocl->context, CL_MEM_HOST_READ_ONLY,     4*msh->nv_tot*sizeof(float), NULL, &ocl->err);
     ocl->vtx_ff = clCreateBuffer(ocl->context, CL_MEM_HOST_READ_ONLY,     4*msh->nv_tot*sizeof(float), NULL, &ocl->err);
 
     ocl->coo_ii = clCreateBuffer(ocl->context, CL_MEM_HOST_READ_ONLY, 27*16*msh->nv_tot*sizeof(int),   NULL, &ocl->err);
@@ -165,19 +167,21 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
 
     ocl->err = clSetKernelArg(ocl->vtx_init, 0, sizeof(cl_mem), (void*)&ocl->buf_cc);
     ocl->err = clSetKernelArg(ocl->vtx_init, 1, sizeof(cl_mem), (void*)&ocl->vtx_xx);
-    ocl->err = clSetKernelArg(ocl->vtx_init, 2, sizeof(cl_mem), (void*)&ocl->vtx_uu);
-    ocl->err = clSetKernelArg(ocl->vtx_init, 3, sizeof(cl_mem), (void*)&ocl->vtx_ff);
-    ocl->err = clSetKernelArg(ocl->vtx_init, 4, sizeof(cl_mem), (void*)&ocl->coo_ii);
-    ocl->err = clSetKernelArg(ocl->vtx_init, 5, sizeof(cl_mem), (void*)&ocl->coo_jj);
-    ocl->err = clSetKernelArg(ocl->vtx_init, 6, sizeof(cl_mem), (void*)&ocl->coo_aa);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 2, sizeof(cl_mem), (void*)&ocl->vtx_u0);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 3, sizeof(cl_mem), (void*)&ocl->vtx_u1);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 4, sizeof(cl_mem), (void*)&ocl->vtx_ff);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 5, sizeof(cl_mem), (void*)&ocl->coo_ii);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 6, sizeof(cl_mem), (void*)&ocl->coo_jj);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 7, sizeof(cl_mem), (void*)&ocl->coo_aa);
     
     ocl->err = clSetKernelArg(ocl->vtx_assm, 0, sizeof(cl_mem), (void*)&ocl->buf_cc);
     ocl->err = clSetKernelArg(ocl->vtx_assm, 1, sizeof(cl_mem), (void*)&ocl->vtx_xx);
-    ocl->err = clSetKernelArg(ocl->vtx_assm, 2, sizeof(cl_mem), (void*)&ocl->vtx_uu);
-    ocl->err = clSetKernelArg(ocl->vtx_assm, 3, sizeof(cl_mem), (void*)&ocl->vtx_ff);
-    ocl->err = clSetKernelArg(ocl->vtx_assm, 4, sizeof(cl_mem), (void*)&ocl->coo_ii);
-    ocl->err = clSetKernelArg(ocl->vtx_assm, 5, sizeof(cl_mem), (void*)&ocl->coo_jj);
-    ocl->err = clSetKernelArg(ocl->vtx_assm, 6, sizeof(cl_mem), (void*)&ocl->coo_aa);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 2, sizeof(cl_mem), (void*)&ocl->vtx_u0);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 3, sizeof(cl_mem), (void*)&ocl->vtx_u1);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 4, sizeof(cl_mem), (void*)&ocl->vtx_ff);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 5, sizeof(cl_mem), (void*)&ocl->coo_ii);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 6, sizeof(cl_mem), (void*)&ocl->coo_jj);
+    ocl->err = clSetKernelArg(ocl->vtx_assm, 7, sizeof(cl_mem), (void*)&ocl->coo_aa);
 
 }
 
@@ -195,7 +199,8 @@ void ocl_final(struct ocl_obj *ocl)
     //memory
     ocl->err = clReleaseMemObject(ocl->buf_cc);
     ocl->err = clReleaseMemObject(ocl->vtx_xx);
-    ocl->err = clReleaseMemObject(ocl->vtx_uu);
+    ocl->err = clReleaseMemObject(ocl->vtx_u0);
+    ocl->err = clReleaseMemObject(ocl->vtx_u1);
     ocl->err = clReleaseMemObject(ocl->vtx_ff);
 
     ocl->err = clReleaseMemObject(ocl->coo_ii);
