@@ -459,63 +459,73 @@ float3 eig_val(float8 A)
 //    return d;
 //}
 
-//eigenvectors - Kopp2008
-void eig_vec(float8 A, float3 d, float3 v[3])
-{
-    //lam1
-    float3 c1 = {A.s1, A.s3-d.x, A.s4};
-    float3 c2 = {A.s2, A.s4, A.s5-d.x};
-    //lam2
-    float3 c3 = {A.s0-d.y, A.s1, A.s2};
-    float3 c4 = {A.s2, A.s4, A.s5-d.y};
-    //lam3
-    float3 c5 = {A.s0-d.z, A.s1, A.s2};
-    float3 c6 = {A.s1, A.s3-d.z, A.s4};
-
-    //cross, normalise
-    v[0] = vec_unit(vec_cross(c1, c2));
-    v[1] = vec_unit(vec_cross(c3, c4));
-    v[2] = vec_unit(vec_cross(c5, c6));
-
-    return;
-}
-
-////eigenvectors - Deledalle2017
+////eigenvectors - Kopp2008
 //void eig_vec(float8 A, float3 d, float3 v[3])
 //{
-//    float m0 = (A.s1*(A.s5-d.x)-A.s4*A.s2)/(A.s2*(A.s3-d.x)-A.s1*A.s4);
-//    float m1 = (A.s1*(A.s5-d.y)-A.s4*A.s2)/(A.s2*(A.s3-d.y)-A.s1*A.s4);
-//    float m2 = (A.s1*(A.s5-d.z)-A.s4*A.s2)/(A.s2*(A.s3-d.z)-A.s1*A.s4);
+//    //lam1
+//    float3 c1 = {A.s1, A.s3-d.x, A.s4};
+//    float3 c2 = {A.s2, A.s4, A.s5-d.x};
+//    //lam2
+//    float3 c3 = {A.s0-d.y, A.s1, A.s2};
+//    float3 c4 = {A.s2, A.s4, A.s5-d.y};
+//    //lam3
+//    float3 c5 = {A.s0-d.z, A.s1, A.s2};
+//    float3 c6 = {A.s1, A.s3-d.z, A.s4};
 //
-//    //vecs
-//    v[0] = vec_unit((float3){(d.x - A.s5 - A.s4*m0), A.s2*m0, A.s2});
-//    v[1] = vec_unit((float3){(d.y - A.s5 - A.s4*m1), A.s2*m1, A.s2});
-//    v[2] = vec_unit((float3){(d.z - A.s5 - A.s4*m2), A.s2*m2, A.s2});
+//    //cross, normalise
+//    v[0] = vec_unit(vec_cross(c1, c2));
+//    v[1] = vec_unit(vec_cross(c3, c4));
+//    v[2] = vec_unit(vec_cross(c5, c6));
 //
 //    return;
 //}
+
+//eigenvectors - Deledalle2017
+void eig_vec(float8 A, float3 dd, float3 v[3])
+{
+    //wierd layout
+//    float a = A.s0;
+    float b = A.s3;
+    float c = A.s5;
+    float d = A.s1;
+    float e = A.s4;
+    float f = A.s2;
+  
+    //trap divide by zero!
+    float m1 = (d*(c - dd.x) - e*f)/(f*(b - dd.x) - d*e);
+    float m2 = (d*(c - dd.y) - e*f)/(f*(b - dd.y) - d*e);
+    float m3 = (d*(c - dd.z) - e*f)/(f*(b - dd.z) - d*e);
+  
+    //vecs (mult by f)
+    v[0] = vec_unit((float3){(dd.x - c - e*m1), m1*f, f});
+    v[1] = vec_unit((float3){(dd.y - c - e*m2), m2*f, f});
+    v[2] = vec_unit((float3){(dd.z - c - e*m3), m3*f, f});
+
+    return;
+}
 
 
 //split
 void eig_A1A2(float8 A, float8 *A1, float8 *A2)
 {
     //vals, vecs
-    float3 d;
-    float3 v[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
+    float3 dd;
+    float3 vv[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
     
     //calc
-    d = eig_val(A);
-    eig_vec(A, d, v);
+    dd = eig_val(A);
+    eig_vec(A, dd, vv);
     
-//    A1 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+    *A1 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+    *A2 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
     
-    *A1 = sym_add(*A1, sym_smul(vec_out(v[0]),(d.x>0e0f)*d.x));
-    *A1 = sym_add(*A1, sym_smul(vec_out(v[1]),(d.y>0e0f)*d.y));
-    *A1 = sym_add(*A1, sym_smul(vec_out(v[2]),(d.z>0e0f)*d.z));
+    *A1 = sym_add(*A1, sym_smul(vec_out(vv[0]),(dd.x>0e0f)*dd.x));
+    *A1 = sym_add(*A1, sym_smul(vec_out(vv[1]),(dd.y>0e0f)*dd.y));
+    *A1 = sym_add(*A1, sym_smul(vec_out(vv[2]),(dd.z>0e0f)*dd.z));
     
-    *A2 = sym_add(*A2, sym_smul(vec_out(v[0]),(d.x<0e0f)*d.x));
-    *A2 = sym_add(*A2, sym_smul(vec_out(v[1]),(d.y<0e0f)*d.y));
-    *A2 = sym_add(*A2, sym_smul(vec_out(v[2]),(d.z<0e0f)*d.z));
+    *A2 = sym_add(*A2, sym_smul(vec_out(vv[0]),(dd.x<0e0f)*dd.x));
+    *A2 = sym_add(*A2, sym_smul(vec_out(vv[1]),(dd.y<0e0f)*dd.y));
+    *A2 = sym_add(*A2, sym_smul(vec_out(vv[2]),(dd.z<0e0f)*dd.z));
         
     return;
 }
@@ -767,20 +777,25 @@ kernel void vtx_assm(constant   float  *buf_cc,
 //            printf("   %+e %+e %+e\n", Eh.s2, Eh.s4, Eh.s5);
   
 //            float3 dd = eig_val(Eh);
-//            printf("%v3+e\n",dd);
+//            printf("dd    %v3+e\n",dd);
+//            
+//            float3 vv[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
+//            eig_vec(Eh, dd, vv);
+//            printf("vv[0] %v3+e\n",vv[0]);
+//            printf("vv[1] %v3+e\n",vv[1]);
+//            printf("vv[2] %v3+e\n",vv[2]);
             
             //split
-            float8 Eh1 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
-            float8 Eh2 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+            float8 Eh1, Eh2;
             eig_A1A2(Eh, &Eh1, &Eh2);
             
-            printf("Eh1 %+e %+e %+e\n", Eh1.s0, Eh1.s1, Eh1.s2);
-            printf("    %+e %+e %+e\n", Eh1.s1, Eh1.s3, Eh1.s4);
-            printf("    %+e %+e %+e\n", Eh1.s2, Eh1.s4, Eh1.s5);
-            
-            printf("Eh2 %+e %+e %+e\n", Eh2.s0, Eh2.s1, Eh2.s2);
-            printf("    %+e %+e %+e\n", Eh2.s1, Eh2.s3, Eh2.s4);
-            printf("    %+e %+e %+e\n", Eh2.s2, Eh2.s4, Eh2.s5);
+//            printf("Eh1 %+e %+e %+e\n", Eh1.s0, Eh1.s1, Eh1.s2);
+//            printf("    %+e %+e %+e\n", Eh1.s1, Eh1.s3, Eh1.s4);
+//            printf("    %+e %+e %+e\n", Eh1.s2, Eh1.s4, Eh1.s5);
+//
+//            printf("Eh2 %+e %+e %+e\n", Eh2.s0, Eh2.s1, Eh2.s2);
+//            printf("    %+e %+e %+e\n", Eh2.s1, Eh2.s3, Eh2.s4);
+//            printf("    %+e %+e %+e\n", Eh2.s2, Eh2.s4, Eh2.s5);
             
             //stress
             float8 Sh1 = mec_S(Eh1);
