@@ -737,9 +737,9 @@ kernel void vtx_assm(constant   float  *buf_cc,
             float8 Eh1, Eh2;
             eig_A1A2(Eh, &Eh1, &Eh2);
             
-            printf("%+e %+e %+e\n", Eh1.s0, Eh1.s1, Eh1.s2);
-            printf("%+e %+e %+e\n", Eh1.s1, Eh1.s3, Eh1.s4);
-            printf("%+e %+e %+e\n", Eh1.s2, Eh1.s4, Eh1.s5);
+//            printf("%+e %+e %+e\n", Eh1.s0, Eh1.s1, Eh1.s2);
+//            printf("%+e %+e %+e\n", Eh1.s1, Eh1.s3, Eh1.s4);
+//            printf("%+e %+e %+e\n", Eh1.s2, Eh1.s4, Eh1.s5);
             
             //stress
             float8 Sh1 = mec_S(Eh1);
@@ -782,10 +782,10 @@ kernel void vtx_assm(constant   float  *buf_cc,
                 float dot_e = bas_ee[vtx1]*bas_ee[vtx2];
                 float dot_g = vec_dot(bas_gg[vtx1],bas_gg[vtx2]);
                 
-                printf("%+e\n", ph1);
+//                printf("%+e\n", ph1);
                 
                 //write block cc
-                coo_aa[blk_row + blk_col + 15] += ((2e0f*ph1*dot_e) + (mat_gc*(dot_e/mat_ls + dot_g*mat_ls)) + (mat_gam*(ch1<ch0)*dot_e))*qw; //is the ramp correctly specified?
+                coo_aa[blk_row + blk_col + 15] += ((2e0f*ph1*dot_e) + (mat_gc*(dot_e/mat_ls + dot_g*mat_ls)) + (mat_gam*(ch1<ch0)*dot_e))*qw;
                 
                 //loop dim1
                 for(int dim1=0; dim1<3; dim1++)
@@ -805,8 +805,8 @@ kernel void vtx_assm(constant   float  *buf_cc,
                     float uc = c2*bas_ee[vtx2]*sym_tip(Sh1,E1)*qw;
                     
                     //write blocks uc,cu
-//                    coo_aa[blk_row + blk_col + 4*dim1+3] += uc;  //uc
-//                    coo_aa[blk_row + blk_col + 12+dim1]  += uc;  //cu
+                    coo_aa[blk_row + blk_col + 4*dim1+3] += uc;  //uc
+                    coo_aa[blk_row + blk_col + 12+dim1]  += uc;  //cu
                     
                     //loop dim2
                     for(int dim2=0; dim2<3; dim2++)
@@ -822,7 +822,7 @@ kernel void vtx_assm(constant   float  *buf_cc,
                         float8 S22 = mec_S(E22);
 
                         //write block uu
-//                        coo_aa[blk_row + blk_col + 4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, c1), S22),E1)*qw;
+                        coo_aa[blk_row + blk_col + 4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, c1), S22),E1)*qw;
                         
                     }//dim2
                     
