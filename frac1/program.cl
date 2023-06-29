@@ -64,6 +64,8 @@ int fn_bc2(int3 pos, int3 dim);
 
 void bas_eval(float3 p, float ee[8]);
 void bas_grad(float3 p, float3 gg[8]);
+void bas_itpe(float uu2[8][4], float bas_ee[8], float u[4]);
+void bas_itpg(float uu2[8][4], float3 bas_gg[8], float3 u_grad[4]);
 
 float  vec_dot(float3 a, float3 b);
 float  vec_norm(float3 a);
@@ -77,7 +79,7 @@ float3 vec_saddf(float3 a, float b);
 int3   vec_vaddi(int3 a, int3 b);
 int3   vec_saddi(int3 a, int b);
 
-float3 vec_smul(float3 a, float b);
+float3 vec_smulf(float3 a, float b);
 
 float  sym_tr(float8 A);
 float8 sym_sq(float8 A);
@@ -162,8 +164,6 @@ int fn_bc2(int3 pos, int3 dim)
     return (pos.x==0)||(pos.y==0)||(pos.z==0)||(pos.x==dim.x-1)||(pos.y==dim.y-1)||(pos.z==dim.z-1);;
 }
 
-
-
 /*
  ===================================
  basis
@@ -216,6 +216,32 @@ void bas_grad(float3 p, float3 gg[8])
     return;
 }
 
+//interp eval
+void bas_itpe(float uu2[8][4], float bas_ee[8], float u_eval[4])
+{
+    for(int i=0; i<8; i++)
+    {
+        u_eval[0] += uu2[i][0]*bas_ee[i];
+        u_eval[1] += uu2[i][1]*bas_ee[i];
+        u_eval[2] += uu2[i][2]*bas_ee[i];
+        u_eval[3] += uu2[i][3]*bas_ee[i];
+    }
+    return;
+}
+
+//interp grad
+void bas_itpg(float uu2[8][4], float3 bas_gg[8], float3 u_grad[4])
+{
+    for(int i=0; i<8; i++)
+    {
+        u_grad[0] = vec_vaddf(u_grad[0], vec_smulf(bas_gg[i], uu2[i][0]));
+        u_grad[1] = vec_vaddf(u_grad[1], vec_smulf(bas_gg[i], uu2[i][1]));
+        u_grad[2] = vec_vaddf(u_grad[2], vec_smulf(bas_gg[i], uu2[i][2]));
+        u_grad[3] = vec_vaddf(u_grad[3], vec_smulf(bas_gg[i], uu2[i][3]));
+    }
+    return;
+}
+
 /*
  ===================================
  vector R^3
@@ -254,27 +280,32 @@ float8 vec_out(float3 v)
     return (float8){v.x*v.x, v.x*v.y, v.x*v.z, v.y*v.y, v.y*v.z, v.z*v.z, 0e0f, 0e0f};
 }
 
+//add vector float
 float3 vec_vaddf(float3 a, float3 b)
 {
     return (float3){a.x + b.x, a.y + b.y, a.z + b.z};
 }
 
+//add scalar float
 float3 vec_saddf(float3 a, float b)
 {
     return (float3){a.x + b, a.y + b, a.z + b};
 }
 
+//add vector int
 int3 vec_vaddi(int3 a, int3 b)
 {
     return (int3){a.x + b.x, a.y + b.y, a.z + b.z};
 }
 
+//add scalar int
 int3 vec_saddi(int3 a, int b)
 {
     return (int3){a.x + b, a.y + b, a.z + b};
 }
 
-float3 vec_smul(float3 a, float b)
+//scalar mult float
+float3 vec_smulf(float3 a, float b)
 {
     return (float3){a.x*b, a.y*b, a.z*b};
 }
@@ -397,7 +428,7 @@ float3 eig_val(float8 A)
     return d;
 }
 
-////eigenvectors
+////eigenvectors - kopp2008
 //void eig_vec(float8 A, float3 d, float3 v[3])
 //{
 //    //lam1
@@ -413,12 +444,12 @@ float3 eig_val(float8 A)
 //    //cross, normalise
 //    v[0] = vec_unit(vec_cross(c1, c2));
 //    v[1] = vec_unit(vec_cross(c3, c4));
-//    v[2] = vec_unit(vec_cross(c5, c6));
+//    v[2] = vec_unit(vec_cross(c5, c6)); //v[0] x v[1]?
 //
 //    return;
 //}
 
-//eigenvectors
+//eigenvectors - deledalle2017
 void eig_vec(float8 A, float3 d, float3 v[3])
 {
     float m0 = (A.s1*(A.s5-d.x)-A.s4*A.s2)/(A.s2*(A.s3-d.x)-A.s1*A.s4);
@@ -464,20 +495,23 @@ void eig_E1E2(float3 g, int dim, float8 *E1, float8 *E2)
 {
     float n = vec_norm(g);
     
+    float3 g1 = vec_saddf(g, -n);
+    float3 g2 = vec_saddf(g, +n);
+    
     //vals
-    float d0[3] = {5e-1*(g.x - n), 5e-1*(g.y - n), 5e-1*(g.z - n)};
-    float d1[3] = {5e-1*(g.x + n), 5e-1*(g.y + n), 5e-1*(g.z + n)};
+    float d0[3] = {5e-1*g1.x, 5e-1*g1.y, 5e-1*g1.z};
+    float d1[3] = {5e-1*g2.x, 5e-1*g2.y, 5e-1*g2.z};
     
     //vecs
     float3 v0[3];
-    v0[0] = vec_unit((float3){g.x - n, g.y, g.z});
-    v0[1] = vec_unit((float3){g.x, g.y - n, g.z});
-    v0[2] = vec_unit((float3){-g.x*(g.z + n), -g.y*(g.z + n), g.x*g.x + g.y*g.y});
+    v0[0] = vec_unit((float3){g1.x, g.y, g.z});
+    v0[1] = vec_unit((float3){g.x, g1.y, g.z});
+    v0[2] = vec_unit((float3){-g.x*g2.z, -g.y*g2.z, g.x*g.x + g.y*g.y});
     
     float3 v1[3];
-    v1[0] = vec_unit((float3){g.x + n, g.y, g.z});
-    v1[1] = vec_unit((float3){g.x, g.y + n, g.z});
-    v1[2] = vec_unit((float3){-g.x*(g.z - n), -g.y*(g.z - n), g.x*g.x + g.y*g.y});
+    v1[0] = vec_unit((float3){g2.x, g.y, g.z});
+    v1[1] = vec_unit((float3){g.x, g2.y, g.z});
+    v1[2] = vec_unit((float3){-g.x*g1.z, -g.y*g1.z, g.x*g.x + g.y*g.y});
     
     //select
     *E1 = sym_smul(vec_out(v0[dim]),(d0[dim]>0e0f)*d0[dim]) + sym_smul(vec_out(v1[dim]),(d1[dim]>0e0f)*d1[dim]);
@@ -636,17 +670,20 @@ kernel void vtx_assm(constant   float  *buf_cc,
     int blk_row = 27*16*vtx_idx;
     
     //loop ele
-    for(int ele1=0; ele1<8; ele1++)
+//    for(int ele1=0; ele1<8; ele1++)
+    for(int vtx1=7; vtx1>=0; vtx1--) //wierd bug
     {
+//        int vtx1 = 7 - ele1;
+        int ele1 = 7 - vtx1;
         int3 ele_pos = off2[ele1];
-        int vtx1 = 7 - ele1;
         
-//        printf("ele %2d [%v3d] %d\n", ele1, ele_pos, vtx1);
+        printf("ele %2d [%v3d] %d\n", ele1, ele_pos, vtx1);
         
+        //read soln
         float uu2[8][4];
         mem_read2(uu3, uu2, ele_pos);
         
-        //loop quad points
+        //loop quad points (change limit with scheme 1,8,27)
         for(int qpt1=0; qpt1<1; qpt1++)
         {
             //1pt
@@ -670,13 +707,59 @@ kernel void vtx_assm(constant   float  *buf_cc,
             bas_eval(qp, bas_ee);
             bas_grad(qp, bas_gg);
             
+            //eval soln
+            float  u_eval[4];
+            float3 u_grad[4];
+            
+            bas_itpe(uu2, bas_ee, u_eval);
+            bas_itpg(uu2, bas_gg, u_grad);
+            
+            //strain
+            float8 Eh = mec_E((float3*)u_grad);
+            
+//            printf("Eh [%+e,%+e,%+e]\n", Eh.s0, Eh.s1, Eh.s2);
+//            printf("   [%+e,%+e,%+e]\n", Eh.s1, Eh.s3, Eh.s4);
+//            printf("   [%+e,%+e,%+e]\n", Eh.s2, Eh.s4, Eh.s5);
+            
+            //split
+            float8 Eh1, Eh2;
+            eig_A1A2(Eh, &Eh1, &Eh2);
+            
+//            printf("Eh1 [%+e,%+e,%+e]\n", Eh1.s0, Eh1.s1, Eh1.s2);
+//            printf("    [%+e,%+e,%+e]\n", Eh1.s1, Eh1.s3, Eh1.s4);
+//            printf("    [%+e,%+e,%+e]\n", Eh1.s2, Eh1.s4, Eh1.s5);
+//
+//            printf("Eh2 [%+e,%+e,%+e]\n", Eh2.s0, Eh2.s1, Eh2.s2);
+//            printf("    [%+e,%+e,%+e]\n", Eh2.s1, Eh2.s3, Eh2.s4);
+//            printf("    [%+e,%+e,%+e]\n", Eh2.s2, Eh2.s4, Eh2.s5);
+            
+            //stress
+            float8 Sh1 = mec_S(Eh1);
+            float8 Sh2 = mec_S(Eh2);
+            
+//            printf("Sh1 [%+e,%+e,%+e]\n", Sh1.s0, Sh1.s1, Sh1.s2);
+//            printf("    [%+e,%+e,%+e]\n", Sh1.s1, Sh1.s3, Sh1.s4);
+//            printf("    [%+e,%+e,%+e]\n", Sh1.s2, Sh1.s4, Sh1.s5);
+//
+//            printf("Sh2 [%+e,%+e,%+e]\n", Sh2.s0, Sh2.s1, Sh2.s2);
+//            printf("    [%+e,%+e,%+e]\n", Sh2.s1, Sh2.s3, Sh2.s4);
+//            printf("    [%+e,%+e,%+e]\n", Sh2.s2, Sh2.s4, Sh2.s5);
+            
+            //energy
+            float ph1 = mec_p(Eh1);
+            
+            //crack
+            float ch1 = u_eval[3];
+            float c1 = pown(1e0f - ch1, 2);
+            float c2 = 2e0f*(ch1 - 1e0f);
+            
             //loop adj
             for(int vtx2=0; vtx2<8; vtx2++)
             {
                 int vtx_idx3 = fn_idx3(vec_vaddi(off2[ele1], off2[vtx2]));
                 int blk_col = 16*vtx_idx3;
             
-//                printf("vtx2 %d %d %2d\n", vtx2, vtx1, vtx_idx3);
+                printf("vtx2 %d %d %2d\n", vtx2, vtx1, vtx_idx3);
                 
                 //basis grad
                 float3 g1 = bas_gg[vtx1];
@@ -871,7 +954,7 @@ kernel void vtx_assm1(constant   float  *buf_cc,
                 //u_grad
                 for(int dim1=0; dim1<3; dim1++)
                 {
-                    u_grad[dim1] = vec_add(u_grad[dim1], vec_smul(gg[vtx_i], vv_u[vtx_i][dim1]));
+                    u_grad[dim1] = vec_add(u_grad[dim1], vec_smulf(gg[vtx_i], vv_u[vtx_i][dim1]));
                 }
                 //c_eval
                 c_eval += vv_u[vtx_i][3]*ee[vtx_i];
