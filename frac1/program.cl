@@ -366,7 +366,7 @@ float8 sym_add(float8 A, float8 B)
  */
 
 //strain
-float8 mec_E(float3 g[3])
+float8 mec_E(float3 g[])
 {
     return (float8){g[0].x, 5e-1f*(g[0].y+g[1].x), 5e-1f*(g[0].z+g[2].x), g[1].y, 5e-1f*(g[1].z+g[2].y), g[2].z, 0e0f, 0e0f};
 }
@@ -392,79 +392,108 @@ float mec_p(float8 E)
  ===================================
  */
 
-//eigenvalues - cuppen
+//eigenvalues - Deledalle2017
 float3 eig_val(float8 A)
 {
-    float3 d;
+    //wierd layout
+    float a = A.s0;
+    float b = A.s3;
+    float c = A.s5;
+    float d = A.s1;
+    float e = A.s4;
+    float f = A.s2;
     
-    //off-diag
-    float p1 = A.s1*A.s1 + A.s2*A.s2 + A.s4*A.s4;
+    float x1 = a*a + b*b + c*c - a*b - a*c - b*c + 3e0f*(d*d + e*e + f*f);
+    float x2 = -(2e0f*a - b - c)*(2e0f*b - a - c)*(2e0f*c - a - b) + 9e0f*(2e0f*c - a - b)*d*d + (2e0f*b - a - c)*f*f + (2e0f*a - b - c)*e*e - 5.4e1f*d*e*f;
     
-    //diag
-    if(p1==0e0f)
-    {
-        d.x = A.s0;
-        d.y = A.s3;
-        d.z = A.s5;
-        
-        return d;
-    }
+    float p1 = atan(sqrt(4e0f*x1*x1*x1 - x2*x2)/x2);
     
-    float q  = sym_tr(A)/3e0f;
-    float p2 = pown(A.s0-q,2) + pown(A.s3-q,2) + pown(A.s5-q,2) + 2e0f*p1;
-    float p  = sqrt(p2/6e0f);
+    //logic
+    float phi = 5e-1f*M_PI_F;
+    phi = (x2>0e0f)?p1         :phi;       //x2>0
+    phi = (x2<0e0f)?p1 + M_PI_F:phi;       //x2<0
+ 
+    float3 dd;
+    dd.x = (a + b + c - 2e0f*sqrt(x1)*cos((phi         )/3e0f))/3e0f;
+    dd.y = (a + b + c + 2e0f*sqrt(x1)*cos((phi - M_PI_F)/3e0f))/3e0f;
+    dd.z = (a + b + c + 2e0f*sqrt(x1)*cos((phi + M_PI_F)/3e0f))/3e0f;
     
-    //B = (A - qI)/p
-    float8 B = (float8){(A.s0 - q)/p, A.s1/p, A.s2/p, (A.s3 - q)/p, A.s4/p, (A.s5 - q)/p, 0e0f, 0e0f};
-    float r = 5e-1f*sym_det(B);
-    
-    float phi = acos(r)/3e0f;
-    phi = (r<=-1e0f)?M_PI_F/3e0f:phi;
-    phi = (r>=+1e0f)?0e0f:phi;
-    
-    //decreasing order
-    d.z = q + 2e0f*p*cos(phi);
-    d.x = q + 2e0f*p*cos(phi + (2e0f*M_PI_F/3e0f));
-    d.y = 3e0f*q - (d[0] + d[2]);
-
-    return d;
+    return dd;
 }
 
-////eigenvectors - kopp2008
-//void eig_vec(float8 A, float3 d, float3 v[3])
+////eigenvalues - cuppen
+//float3 eig_val(float8 A)
 //{
-//    //lam1
-//    float3 c1 = {A.s1, A.s3-d.x, A.s4};
-//    float3 c2 = {A.s2, A.s4, A.s5-d.x};
-//    //lam2
-//    float3 c3 = {A.s0-d.y, A.s1, A.s2};
-//    float3 c4 = {A.s2, A.s4, A.s5-d.y};
-//    //lam3
-//    float3 c5 = {A.s0-d.z, A.s1, A.s2};
-//    float3 c6 = {A.s1, A.s3-d.z, A.s4};
+//    float3 d;
 //
-//    //cross, normalise
-//    v[0] = vec_unit(vec_cross(c1, c2));
-//    v[1] = vec_unit(vec_cross(c3, c4));
-//    v[2] = vec_unit(vec_cross(c5, c6));
+//    //off-diag
+//    float p1 = A.s1*A.s1 + A.s2*A.s2 + A.s4*A.s4;
 //
-//    return;
+//    //diag
+//    if(p1==0e0f)
+//    {
+//        d.x = A.s0;
+//        d.y = A.s3;
+//        d.z = A.s5;
+//
+//        return d;
+//    }
+//
+//    float q  = sym_tr(A)/3e0f;
+//    float p2 = pown(A.s0-q,2) + pown(A.s3-q,2) + pown(A.s5-q,2) + 2e0f*p1;
+//    float p  = sqrt(p2/6e0f);
+//
+//    //B = (A - qI)/p
+//    float8 B = (float8){(A.s0 - q)/p, A.s1/p, A.s2/p, (A.s3 - q)/p, A.s4/p, (A.s5 - q)/p, 0e0f, 0e0f};
+//    float r = 5e-1f*sym_det(B);
+//
+//    float phi = acos(r)/3e0f;
+//    phi = (r<=-1e0f)?M_PI_F/3e0f:phi;
+//    phi = (r>=+1e0f)?0e0f:phi;
+//
+//    //decreasing order
+//    d.z = q + 2e0f*p*cos(phi);
+//    d.x = q + 2e0f*p*cos(phi + (2e0f*M_PI_F/3e0f));
+//    d.y = 3e0f*q - (d[0] + d[2]);
+//
+//    return d;
 //}
 
-//eigenvectors - deledalle2017
+//eigenvectors - Kopp2008
 void eig_vec(float8 A, float3 d, float3 v[3])
 {
-    float m0 = (A.s1*(A.s5-d.x)-A.s4*A.s2)/(A.s2*(A.s3-d.x)-A.s1*A.s4);
-    float m1 = (A.s1*(A.s5-d.y)-A.s4*A.s2)/(A.s2*(A.s3-d.y)-A.s1*A.s4);
-    float m2 = (A.s1*(A.s5-d.z)-A.s4*A.s2)/(A.s2*(A.s3-d.z)-A.s1*A.s4);
+    //lam1
+    float3 c1 = {A.s1, A.s3-d.x, A.s4};
+    float3 c2 = {A.s2, A.s4, A.s5-d.x};
+    //lam2
+    float3 c3 = {A.s0-d.y, A.s1, A.s2};
+    float3 c4 = {A.s2, A.s4, A.s5-d.y};
+    //lam3
+    float3 c5 = {A.s0-d.z, A.s1, A.s2};
+    float3 c6 = {A.s1, A.s3-d.z, A.s4};
 
-    //vecs
-    v[0] = vec_unit((float3){(d.x - A.s5 - A.s4*m0), A.s2*m0, A.s2});
-    v[1] = vec_unit((float3){(d.y - A.s5 - A.s4*m1), A.s2*m1, A.s2});
-    v[2] = vec_unit((float3){(d.z - A.s5 - A.s4*m2), A.s2*m2, A.s2});
+    //cross, normalise
+    v[0] = vec_unit(vec_cross(c1, c2));
+    v[1] = vec_unit(vec_cross(c3, c4));
+    v[2] = vec_unit(vec_cross(c5, c6));
 
     return;
 }
+
+////eigenvectors - Deledalle2017
+//void eig_vec(float8 A, float3 d, float3 v[3])
+//{
+//    float m0 = (A.s1*(A.s5-d.x)-A.s4*A.s2)/(A.s2*(A.s3-d.x)-A.s1*A.s4);
+//    float m1 = (A.s1*(A.s5-d.y)-A.s4*A.s2)/(A.s2*(A.s3-d.y)-A.s1*A.s4);
+//    float m2 = (A.s1*(A.s5-d.z)-A.s4*A.s2)/(A.s2*(A.s3-d.z)-A.s1*A.s4);
+//
+//    //vecs
+//    v[0] = vec_unit((float3){(d.x - A.s5 - A.s4*m0), A.s2*m0, A.s2});
+//    v[1] = vec_unit((float3){(d.y - A.s5 - A.s4*m1), A.s2*m1, A.s2});
+//    v[2] = vec_unit((float3){(d.z - A.s5 - A.s4*m2), A.s2*m2, A.s2});
+//
+//    return;
+//}
 
 
 //split
@@ -472,7 +501,7 @@ void eig_A1A2(float8 A, float8 *A1, float8 *A2)
 {
     //vals, vecs
     float3 d;
-    float3 v[3];
+    float3 v[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
     
     //calc
     d = eig_val(A);
@@ -500,7 +529,7 @@ void eig_E1E2(float3 g, int dim, float8 *E1, float8 *E2)
     float3 g1 = vec_saddf(g, -n);
     float3 g2 = vec_saddf(g, +n);
     
-    //vals
+    //vals (d2 is always zero)
     float d0[3] = {5e-1*g1.x, 5e-1*g1.y, 5e-1*g1.z};
     float d1[3] = {5e-1*g2.x, 5e-1*g2.y, 5e-1*g2.z};
     
@@ -609,10 +638,10 @@ kernel void vtx_init(constant   float  *buf_cc,
     u0[2] = 0e0f;
     u0[3] = 0e0f;
     
-    u1[0] = 0e0f;
-    u1[1] = 0e0f;
-    u1[2] = 0e0f;
-    u1[3] = 0e0f;
+    u1[0] = 1e-1f;
+    u1[1] = 2e-1f;
+    u1[2] = 3e-1f;
+    u1[3] = 4e-1f;
     
     f[0] = 0e0f;
     f[1] = 0e0f;
@@ -722,25 +751,36 @@ kernel void vtx_assm(constant   float  *buf_cc,
             bas_grad(qp, bas_gg);
             
             //eval soln
-            float  u0_eval[4];
-            float  u1_eval[4];
-            float3 u1_grad[4];
+            float  u0_eval[4] = {0e0f, 0e0f, 0e0f, 0e0f};
+            float  u1_eval[4] = {0e0f, 0e0f, 0e0f, 0e0f};
+            float3 u1_grad[4] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
             
             bas_itpe(uu20, bas_ee, u0_eval);
             bas_itpe(uu21, bas_ee, u1_eval);
             bas_itpg(uu21, bas_gg, u1_grad);
             
             //strain
-            float8 Eh = mec_E(u1_grad); //(float3*)
+            float8 Eh = mec_E(u1_grad);
+            
+//            printf("Eh %+e %+e %+e\n", Eh.s0, Eh.s1, Eh.s2);
+//            printf("   %+e %+e %+e\n", Eh.s1, Eh.s3, Eh.s4);
+//            printf("   %+e %+e %+e\n", Eh.s2, Eh.s4, Eh.s5);
+  
+//            float3 dd = eig_val(Eh);
+//            printf("%v3+e\n",dd);
             
             //split
             float8 Eh1 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
             float8 Eh2 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
             eig_A1A2(Eh, &Eh1, &Eh2);
             
-//            printf("%+e %+e %+e\n", Eh1.s0, Eh1.s1, Eh1.s2);
-//            printf("%+e %+e %+e\n", Eh1.s1, Eh1.s3, Eh1.s4);
-//            printf("%+e %+e %+e\n", Eh1.s2, Eh1.s4, Eh1.s5);
+            printf("Eh1 %+e %+e %+e\n", Eh1.s0, Eh1.s1, Eh1.s2);
+            printf("    %+e %+e %+e\n", Eh1.s1, Eh1.s3, Eh1.s4);
+            printf("    %+e %+e %+e\n", Eh1.s2, Eh1.s4, Eh1.s5);
+            
+            printf("Eh2 %+e %+e %+e\n", Eh2.s0, Eh2.s1, Eh2.s2);
+            printf("    %+e %+e %+e\n", Eh2.s1, Eh2.s3, Eh2.s4);
+            printf("    %+e %+e %+e\n", Eh2.s2, Eh2.s4, Eh2.s5);
             
             //stress
             float8 Sh1 = mec_S(Eh1);
