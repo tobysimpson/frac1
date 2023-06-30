@@ -429,7 +429,7 @@ float mec_p(float8 E)
 //eigenvalues - Deledalle2017
 float3 eig_val(float8 A)
 {
-    //wierd layout
+    //weird layout
     float a = A.s0;
     float b = A.s3;
     float c = A.s5;
@@ -507,14 +507,14 @@ void eig_A1A2(float8 A, float8 *A1, float8 *A2)
     *A1 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
     *A2 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
     
-    //avoid numeric error
-    *A1 = sym_add(*A1, sym_smul(vec_out(vv[0]),(dd.x>+1e-6f)*dd.x));
-    *A1 = sym_add(*A1, sym_smul(vec_out(vv[1]),(dd.y>+1e-6f)*dd.y));
-    *A1 = sym_add(*A1, sym_smul(vec_out(vv[2]),(dd.z>+1e-6f)*dd.z));
+    //cross, sum
+    *A1 = sym_add(*A1, sym_smul(vec_out(vv[0]),(dd.x>+0e0f)*dd.x));
+    *A1 = sym_add(*A1, sym_smul(vec_out(vv[1]),(dd.y>+0e0f)*dd.y));
+    *A1 = sym_add(*A1, sym_smul(vec_out(vv[2]),(dd.z>+0e0f)*dd.z));
     
-    *A2 = sym_add(*A2, sym_smul(vec_out(vv[0]),(dd.x<-1e-6f)*dd.x));
-    *A2 = sym_add(*A2, sym_smul(vec_out(vv[1]),(dd.y<-1e-6f)*dd.y));
-    *A2 = sym_add(*A2, sym_smul(vec_out(vv[2]),(dd.z<-1e-6f)*dd.z));
+    *A2 = sym_add(*A2, sym_smul(vec_out(vv[0]),(dd.x<-0e0f)*dd.x));
+    *A2 = sym_add(*A2, sym_smul(vec_out(vv[1]),(dd.y<-0e0f)*dd.y));
+    *A2 = sym_add(*A2, sym_smul(vec_out(vv[2]),(dd.z<-0e0f)*dd.z));
         
     return;
 }
@@ -760,7 +760,6 @@ kernel void vtx_assm(constant   float3 *buf_cc,
     int blk_row = 27*16*vtx_idx;
     int vec_row = 4*vtx_idx;
     
-
     //loop ele
     for(int vtx1=7; vtx1>=0; vtx1--)
     {
@@ -816,19 +815,6 @@ kernel void vtx_assm(constant   float3 *buf_cc,
             //strain
             float8 Eh = mec_E(u1_grad);
             
-//            printf("Eh %+e %+e %+e\n", Eh.s0, Eh.s1, Eh.s2);
-//            printf("   %+e %+e %+e\n", Eh.s1, Eh.s3, Eh.s4);
-//            printf("   %+e %+e %+e\n", Eh.s2, Eh.s4, Eh.s5);
-  
-//            float3 dd = eig_val(Eh);
-//            printf("dd    %v3+e\n",dd);
-//
-//            float3 vv[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
-//            eig_vec(Eh, dd, vv);
-//            printf("vv[0] %v3+e\n",vv[0]);
-//            printf("vv[1] %v3+e\n",vv[1]);
-//            printf("vv[2] %v3+e\n",vv[2]);
-            
             //split
             float8 Eh1, Eh2;
             eig_A1A2(Eh, &Eh1, &Eh2);
@@ -836,11 +822,7 @@ kernel void vtx_assm(constant   float3 *buf_cc,
 //            printf("Eh1 %+e %+e %+e\n", Eh1.s0, Eh1.s1, Eh1.s2);
 //            printf("    %+e %+e %+e\n", Eh1.s1, Eh1.s3, Eh1.s4);
 //            printf("    %+e %+e %+e\n", Eh1.s2, Eh1.s4, Eh1.s5);
-//
-//            printf("Eh2 %+e %+e %+e\n", Eh2.s0, Eh2.s1, Eh2.s2);
-//            printf("    %+e %+e %+e\n", Eh2.s1, Eh2.s3, Eh2.s4);
-//            printf("    %+e %+e %+e\n", Eh2.s2, Eh2.s4, Eh2.s5);
-            
+
             //stress
             float8 Sh1 = mec_S(Eh1);
             float8 Sh2 = mec_S(Eh2);
@@ -882,16 +864,12 @@ kernel void vtx_assm(constant   float3 *buf_cc,
                 float dot_e = bas_ee[vtx1]*bas_ee[vtx2];
                 float dot_g = vec_dot(bas_gg[vtx1],bas_gg[vtx2]);
                 
-//                printf("%+e\n", ph1);
-                
                 //write block cc
                 coo_aa[blk_row + blk_col + 15] += ((2e0f*ph1*dot_e) + (mat_gc*(dot_e/mat_ls + dot_g*mat_ls)) + (mat_gam*(ch1<ch0)*dot_e))*qw;
             
                 //loop dim1
                 for(int dim1=0; dim1<3; dim1++)
                 {
-//                    printf("dim1 %d\n", dim1);
-                    
                     //def grad
                     float3 def1[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
 
@@ -911,8 +889,6 @@ kernel void vtx_assm(constant   float3 *buf_cc,
                     //loop dim2
                     for(int dim2=0; dim2<3; dim2++)
                     {
-//                        printf("dim %d %d\n", dim1, dim2);
-
                         //split
                         float8 E21 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
                         float8 E22 = {0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
