@@ -690,10 +690,10 @@ kernel void vtx_init(constant   float3 *buf_cc,
     u0[2] = 0e0f;
     u0[3] = 0e0f;
     
-    u1[0] = 0e-1f;
-    u1[1] = 0e-1f;
-    u1[2] = 0e-1f;
-    u1[3] = 0e-1f;
+    u1[0] = 0e0f;
+    u1[1] = 0e0f;
+    u1[2] = 0e0f;
+    u1[3] = 0e0f;
     
     f[0] = 0e0f;
     f[1] = 0e0f;
@@ -768,12 +768,9 @@ kernel void vtx_assm(constant   float3 *buf_cc,
     int vec_row = 4*vtx_idx;
     
 
-    
     //loop ele
-//    for(int ele1=0; ele1<8; ele1++)
     for(int vtx1=7; vtx1>=0; vtx1--)
     {
-//        int vtx1 = 7 - ele1;
         int ele1 = 7 - vtx1;
         int3 ele_pos = off2[ele1];
         
@@ -830,14 +827,14 @@ kernel void vtx_assm(constant   float3 *buf_cc,
 //            printf("   %+e %+e %+e\n", Eh.s1, Eh.s3, Eh.s4);
 //            printf("   %+e %+e %+e\n", Eh.s2, Eh.s4, Eh.s5);
   
-//            float3 dd = eig_val(Eh);
-//            printf("dd    %v3+e\n",dd);
-//
-//            float3 vv[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
-//            eig_vec(Eh, dd, vv);
-//            printf("vv[0] %v3+e\n",vv[0]);
-//            printf("vv[1] %v3+e\n",vv[1]);
-//            printf("vv[2] %v3+e\n",vv[2]);
+            float3 dd = eig_val(Eh);
+            printf("dd    %v3+e\n",dd);
+
+            float3 vv[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
+            eig_vec(Eh, dd, vv);
+            printf("vv[0] %v3+e\n",vv[0]);
+            printf("vv[1] %v3+e\n",vv[1]);
+            printf("vv[2] %v3+e\n",vv[2]);
             
             //split
             float8 Eh1, Eh2;
@@ -895,7 +892,7 @@ kernel void vtx_assm(constant   float3 *buf_cc,
 //                printf("%+e\n", ph1);
                 
                 //write block cc
-//                coo_aa[blk_row + blk_col + 15] += ((2e0f*ph1*dot_e) + (mat_gc*(dot_e/mat_ls + dot_g*mat_ls)) + (mat_gam*(ch1<ch0)*dot_e))*qw;
+                coo_aa[blk_row + blk_col + 15] += ((2e0f*ph1*dot_e) + (mat_gc*(dot_e/mat_ls + dot_g*mat_ls)) + (mat_gam*(ch1<ch0)*dot_e))*qw;
             
                 //loop dim1
                 for(int dim1=0; dim1<3; dim1++)
