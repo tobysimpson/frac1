@@ -41,7 +41,6 @@ struct ocl_obj
     //kernels
     cl_kernel           vtx_init;
     cl_kernel           vtx_assm;
-
 };
 
 
@@ -147,7 +146,7 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
     //CL_MEM_HOST_READ_ONLY/CL_MEM_HOST_NO_ACCESS
 
     //constants
-    ocl->buf_cc = clCreateBuffer(ocl->context, CL_MEM_READ_ONLY | CL_MEM_HOST_NO_ACCESS | CL_MEM_COPY_HOST_PTR, 9*sizeof(float), (void*)&msh->cc, &ocl->err);
+    ocl->buf_cc = clCreateBuffer(ocl->context, CL_MEM_READ_ONLY | CL_MEM_HOST_NO_ACCESS | CL_MEM_COPY_HOST_PTR, 3*sizeof(cl_float3), (void*)&msh->cc, &ocl->err);
 
     //memory
     ocl->vtx_xx = clCreateBuffer(ocl->context, CL_MEM_HOST_READ_ONLY,     4*msh->nv_tot*sizeof(float), NULL, &ocl->err);

@@ -14,8 +14,8 @@ struct msh_obj
 {
     size_t      ne[3];      //ele_dim
     
-    cl_float3   xmin;
-    cl_float3   xmax;
+    cl_float3   x0;         //x min
+    cl_float3   x1;         //x max
     cl_float3   dx;
 
     size_t      nv[3];      //vtx_dim
@@ -25,7 +25,7 @@ struct msh_obj
     size_t      ie[3];      //interior
     size_t      iv[3];
     
-    float       cc[9];      //constants {xmin, xmax, dx}
+    cl_float3   cc[3];      //const for device
 };
 
 
@@ -47,23 +47,14 @@ void msh_init(struct msh_obj *msh)
     printf("ne_tot=%zu\n", msh->ne_tot);
     printf("nv_tot=%zu\n", msh->nv_tot);
     
-    //constants
-    msh->cc[0] = msh->xmin.x;
-    msh->cc[1] = msh->xmin.y;
-    msh->cc[2] = msh->xmin.z;
-    
-    msh->cc[3] = msh->xmax.x;
-    msh->cc[4] = msh->xmax.y;
-    msh->cc[5] = msh->xmax.z;
-    
-    msh->cc[6] = (msh->xmax.x - msh->xmin.x)/(float)msh->ne[0];
-    msh->cc[7] = (msh->xmax.x - msh->xmin.x)/(float)msh->ne[1];
-    msh->cc[8] = (msh->xmax.x - msh->xmin.x)/(float)msh->ne[2];
-    
+    //dx
+    msh->dx.x = (msh->x1.x - msh->x0.x)/(float)msh->ne[0];
+    msh->dx.y = (msh->x1.y - msh->x0.y)/(float)msh->ne[1];
+    msh->dx.z = (msh->x1.z - msh->x0.z)/(float)msh->ne[2];
 
-    printf("xmin=[%+f,%+f,%+f]\n",msh->cc[0],msh->cc[1],msh->cc[2]);
-    printf("xmax=[%+f,%+f,%+f]\n",msh->cc[3],msh->cc[4],msh->cc[5]);
-    printf("dx  =[%+f,%+f,%+f]\n",msh->cc[6],msh->cc[7],msh->cc[8]);
+    printf("xmin=[%+f,%+f,%+f]\n", msh->x0.x, msh->x0.y, msh->x0.z);
+    printf("xmax=[%+f,%+f,%+f]\n", msh->x1.x, msh->x1.y, msh->x1.z);
+    printf("dx  =[%+f,%+f,%+f]\n", msh->dx.x, msh->dx.y, msh->dx.z);
     
     //interior dims
     msh->ie[0] = msh->ne[0] - 2;
@@ -73,6 +64,11 @@ void msh_init(struct msh_obj *msh)
     msh->iv[0] = msh->nv[0] - 2;
     msh->iv[1] = msh->nv[1] - 2;
     msh->iv[2] = msh->nv[2] - 2;
+    
+    //constants
+    msh->cc[0] = msh->x0;
+    msh->cc[1] = msh->x1;
+    msh->cc[2] = msh->dx;
     
     return;
 }
