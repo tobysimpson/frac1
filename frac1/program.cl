@@ -167,7 +167,7 @@ int fn_bc1(int3 pos, int3 dim)
 //on the boundary
 int fn_bc2(int3 pos, int3 dim)
 {
-    return (pos.x==0)||(pos.y==0)||(pos.z==0)||(pos.x==dim.x-1)||(pos.y==dim.y-1)||(pos.z==dim.z-1);;
+    return (pos.x==0)||(pos.y==0)||(pos.z==0)||(pos.x==dim.x-1)||(pos.y==dim.y-1)||(pos.z==dim.z-1);
 }
 
 /*
