@@ -201,7 +201,6 @@ void ocl_final(struct ocl_obj *ocl)
     ocl->err = clReleaseMemObject(ocl->vtx_u0);
     ocl->err = clReleaseMemObject(ocl->vtx_u1);
     ocl->err = clReleaseMemObject(ocl->vtx_ff);
-
     ocl->err = clReleaseMemObject(ocl->coo_ii);
     ocl->err = clReleaseMemObject(ocl->coo_jj);
     ocl->err = clReleaseMemObject(ocl->coo_aa);

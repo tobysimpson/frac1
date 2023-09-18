@@ -456,7 +456,6 @@ float3 eig_val(float8 A)
 }
 
 
-
 ////eigenvectors - Deledalle2017
 //void eig_vec(float8 A, float3 dd, float3 v[3])
 //{
@@ -631,7 +630,6 @@ void mem_read2(float uu3[27][4], float uu2[8][4], int3 ref)
             uu2[i][j] = uu3[idx3][j];
         }
     }
-    
     return;
 }
 
@@ -771,6 +769,7 @@ kernel void vtx_assm(constant   float3 *buf_cc,
         //soln 2x2x2
         float uu20[8][4];
         float uu21[8][4];
+        
         mem_read2(uu30, uu20, ele_pos);
         mem_read2(uu31, uu21, ele_pos);
         

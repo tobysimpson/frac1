@@ -23,7 +23,7 @@ int main(int argc, const char * argv[])
     float   x1 = 1e0f;
     
     //objects
-    struct msh_obj msh = {{ne,ne,ne}, {x0,x0,x0}, {x1,x1,x1}};   //ne,x0,x1
+    struct msh_obj msh= {{ne,ne,ne}, {x0,x0,x0}, {x1,x1,x1}};   //ne,x0,x1
     struct ocl_obj ocl;
     
     //init

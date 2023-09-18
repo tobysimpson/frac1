@@ -17,14 +17,18 @@ struct msh_obj
     cl_float3   x0;         //x min
     cl_float3   x1;         //x max
     cl_float3   dx;
-
+    
+    
     size_t      nv[3];      //vtx_dim
+    
     size_t      ne_tot;     //totals
     size_t      nv_tot;
     
     size_t      ie[3];      //interior
     size_t      iv[3];
     
+
+
     cl_float3   cc[3];      //const for device
 };
 
