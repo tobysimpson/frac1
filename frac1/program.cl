@@ -122,17 +122,18 @@ kernel void vtx_init(global float  *vtx_xx,
         int blk_col = blk_idx*9;
 
         //row
-        for(int i=0; i<3; i++)
+        for(int dim1=0; dim1<3; dim1++)
         {
             //col
-            for(int j=0; j<3; j++)
+            for(int dim2=0; dim2<3; dim2++)
             {
-                int idx = blk_row + blk_col + 3*i + j;
+                //file pos
+                int idx = blk_row + blk_col + 3*dim1 + dim2;
                 
                 //write
-                Juu_ii[idx] = adj_bc1*(3*vtx_idx + i);
-                Juu_jj[idx] = adj_bc1*(3*adj_idx + i);
-                Juu_vv[idx] = (vtx_idx==adj_idx)*(i==j);
+                Juu_ii[idx] = adj_bc1*(3*vtx_idx + dim1);
+                Juu_jj[idx] = adj_bc1*(3*adj_idx + dim2);
+                Juu_vv[idx] = (vtx_idx==adj_idx)*(dim1==dim2);
             }
         }
 
