@@ -127,7 +127,6 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
     //unload compiler
     ocl->err = clUnloadPlatformCompiler(ocl->platform_id);
     
-    
     /*
      =============================
      kernels
@@ -181,7 +180,6 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
     ocl->err = clSetKernelArg(ocl->vtx_assm, 5, sizeof(cl_mem), (void*)&ocl->coo_ii);
     ocl->err = clSetKernelArg(ocl->vtx_assm, 6, sizeof(cl_mem), (void*)&ocl->coo_jj);
     ocl->err = clSetKernelArg(ocl->vtx_assm, 7, sizeof(cl_mem), (void*)&ocl->coo_aa);
-
 }
 
 

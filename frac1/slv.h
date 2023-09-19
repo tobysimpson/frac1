@@ -9,13 +9,13 @@
 #define slv_h
 
 
-
-void vec_print(DenseVector_Float v)
+void dsp_vec(DenseVector_Float v)
 {
     for(int i=0; i<v.count; i++)
     {
-        printf(" %+e\n", v.data[i]);
+        printf("%+e ", v.data[i]);
     }
+    printf("\n");
     
     return;
 }
@@ -33,12 +33,12 @@ int slv_test1(int a)
      */
     
     SparseAttributes_t atts;
-    atts.kind = SparseOrdinary;
+    atts.kind     = SparseOrdinary;        // SparseOrdinary/SparseSymmetric
+//    atts.triangle = SparseUpperTriangle;
     
-    
-    int     A_ii[]  = { 0,   1,   2,    3,    0,   0,   0,   1};
-    int     A_jj[]  = { 0,   1,   2,    3,    1,   2,   3,   0};
-    float   A_vv[]  = { 1,   2,   1,    1,    1,   0,   0,   0};
+    int     A_ii[]  = { 0,   1,   2,    3,    0,   1,   0,   2};
+    int     A_jj[]  = { 0,   1,   2,    3,    1,   0,   2,   0};
+    float   A_vv[]  = { 1,   1,   1,    1,    1,   1,   1,   1};
     
     //size of input arrays
     long            blk_num = 8;
@@ -51,8 +51,6 @@ int slv_test1(int a)
     
     printf("nnz=%lu\n", A.structure.columnStarts[A.structure.columnCount]);      //this is key nnz = the length of the data and row_idx arrays
     
-
-    
     /*
      ========================
      disp mtx
@@ -60,7 +58,7 @@ int slv_test1(int a)
      */
     
     printf("csc\n");
-    
+
     int col_idx = 0;
 
     for(int i=0; i<A.structure.columnStarts[A.structure.columnCount]; i++)
@@ -69,16 +67,8 @@ int slv_test1(int a)
         {
             col_idx += 1;
         }
-        
-        printf("(%d,%d) %e\n",A.structure.rowIndices[i],col_idx,A.data[i]);
+        printf("(%d,%d) %+e\n",A.structure.rowIndices[i],col_idx,A.data[i]);
     }
-
-//    printf("colstarts\n");
-//
-//    for(int j=0; j<A.structure.columnCount+1; j++)
-//    {
-//        printf("%ld\n",A.structure.columnStarts[j]);
-//    }
     
     /*
      ========================
@@ -94,7 +84,7 @@ int slv_test1(int a)
     u.count = 4;
     u.data = u_vv;
     
-    vec_print(u);
+    dsp_vec(u);
 
     
     printf("b\n");
@@ -105,7 +95,7 @@ int slv_test1(int a)
     b.count = 4;
     b.data = b_vv;
 
-    vec_print(b);
+    dsp_vec(b);
     
     /*
      ========================
@@ -115,80 +105,31 @@ int slv_test1(int a)
 
     printf("Au\n");
     SparseMultiply(A,u,b);
-    vec_print(b);
+    dsp_vec(b);
     
     //reset - wont solve without reset
     memset(u.data, 0e0f, 4*sizeof(float));
     printf("u\n");
-    vec_print(u);
+    dsp_vec(u);
     
-    //solve
-//    SparseSolve(SparseConjugateGradient(), A, b, u); //yes
-//    SparseSolve(SparseLSMR(), A, b, u);     //yes
-//    SparseSolve(SparseGMRES(), A, b, u);        //yes
+    /*
+     ========================
+     solve
+     ========================
+     */
     
+    //iterate
+    SparseSolve(SparseConjugateGradient(), A, b, u);    //yes SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
+//    SparseSolve(SparseGMRES(), A, b, u);              //yes
+//    SparseSolve(SparseLSMR(), A, b, u);               //yes
     
-    //solve QR
+    //QR
 //    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //yes
 //    SparseSolve(QR, b , u);
+//    SparseCleanup(A_QR);
     
     printf("u\n");
-    vec_print(u);
-    
-
-
-    /*
-     ========================
-     solve LSMR
-     ========================
-     */
-
-//    SparseSolve(SparseLSMR(), A, b, u);
-//
-//    SparseIterativeStatus_t status = SparseSolve(SparseLSMR(), A, b, u, SparsePreconditionerDiagScaling);
-//
-//    if(status!=SparseIterativeConverged)
-//    {
-//        printf("Failed to converge. Returned with error %d\n", status);}
-//    else
-//    {
-//        printf("u\n");
-//        vec_print(u);
-//    }
-    
-    /*
-     ========================
-     solve GMRES
-     ========================
-     */
-    
-//    SparseGMRESOptions options;
-//
-//    options.atol = 0.01;
-//    options.maxIterations = 1000;
-//    options.nvec = 100;
-//    options.rtol = 0.01;
-//    options.variant = SparseVariantGMRES; //SparseVariantGMRES SparseVariantDQGMRES SparseVariantFGMRES (needs precon)
-//    options.reportError = NULL;
-//    options.reportStatus = NULL;
-//
-////    SparseSolve(SparseGMRES(options), A, b, u, SparsePreconditionerDiagScaling); //SparsePreconditionerDiagonal SparsePreconditionerDiagScaling
-//
-
-    
-    
-//    SparseIterativeStatus_t status = SparseSolve(SparseConjugateGradient(), A, b, u);
-//
-//    if(status!=SparseIterativeConverged)
-//    {
-//        printf("Failed to converge. Returned with error %d\n", status);}
-//    else
-//    {
-//        printf("u\n");
-//        vec_print(u);
-//    }
-    
-
+    dsp_vec(u);
     
     /*
      ========================
@@ -197,12 +138,10 @@ int slv_test1(int a)
     */
     
     SparseCleanup(A);
-//    SparseCleanup(A_QR);
+
     
     return 0;
 }
-
-
 
 
 #endif /* slv_h */
