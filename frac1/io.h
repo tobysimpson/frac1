@@ -11,23 +11,25 @@
 #define ROOT_WRITE  "/Users/toby/Downloads/"
 
 //write
-void wrt_coo(struct msh_obj *msh, struct ocl_obj *ocl)
+void wrt_raw(struct ocl_obj *ocl, cl_mem buf, size_t n, size_t bytes, char *file_name)
 {
+//    printf("%s\n",file_name);
+    
     //name
-    char file1_name[250];
-    sprintf(file1_name, "%s%s.raw", ROOT_WRITE, "vtx_uu");
+    char file1_path[250];
+    sprintf(file1_path, "%s%s.raw", ROOT_WRITE, file_name);
 
     //open
-    FILE* file1 = fopen(file1_name,"wb");
+    FILE* file1 = fopen(file1_path,"wb");
   
     //map
-    void *ptr1 = clEnqueueMapBuffer(ocl->command_queue, ocl->U1u, CL_TRUE, CL_MAP_READ, 0, 4*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+    void *ptr1 = clEnqueueMapBuffer(ocl->command_queue, buf, CL_TRUE, CL_MAP_READ, 0, n*bytes, 0, NULL, NULL, &ocl->err);
      
     //write
-    fwrite(ptr1, sizeof(float), 4*msh->nv_tot, file1);
+    fwrite(ptr1, bytes, n, file1);
     
     //unmap
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->U1u, ptr1, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, buf, ptr1, 0, NULL, NULL);
 
     //close
     fclose(file1);

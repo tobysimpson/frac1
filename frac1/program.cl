@@ -121,27 +121,21 @@ kernel void vtx_init(global float  *vtx_xx,
         
         int blk_col = blk_idx*9;
 
-        //vals
-        int   ii[3][3];
-        int   jj[3][3];
-        float vv[3][3];
-        
         //row
         for(int i=0; i<3; i++)
         {
             //col
             for(int j=0; j<3; j++)
             {
-                ii[i][j] = adj_bc1*(3*vtx_idx + i);
-                jj[i][j] = adj_bc1*(3*adj_idx + j);
-                vv[i][j] = (vtx_idx==adj_idx)*(i==j);
+                int idx = blk_row + blk_col + 3*i + j;
+                
+                //write
+                Juu_ii[idx] = adj_bc1*(3*vtx_idx + i);
+                Juu_jj[idx] = adj_bc1*(3*adj_idx + i);
+                Juu_vv[idx] = (vtx_idx==adj_idx)*(i==j);
             }
         }
-        
-        //write
-        memcpy((void*)&Juu_ii[blk_row + blk_col], ii, 9*sizeof(int));
-        memcpy((void*)&Juu_jj[blk_row + blk_col], jj, 9*sizeof(int));
-        memcpy((void*)&Juu_vv[blk_row + blk_col], vv, 9*sizeof(float));
+
     }
     
     return;
