@@ -35,8 +35,8 @@ int main(int argc, const char * argv[])
 //    slv_test1(1);
     
     //write
-    wrt_coo(&msh, &ocl);
-    wrt_vtk(&msh, &ocl);
+//    wrt_coo(&msh, &ocl);
+//    wrt_vtk(&msh, &ocl);
     
     //clean
     ocl_final(&ocl);

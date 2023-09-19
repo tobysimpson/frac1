@@ -24,9 +24,7 @@ constant float mat_gam  = 1e0f;
  ===================================
  */
 
-int fn_idx1(int3 pos, int3 dim);
-int fn_idx2(int3 pos);
-int fn_idx3(int3 pos);
+int fn_idx(int3 pos, int3 dim);
 
 int fn_bc1(int3 pos, int3 dim);
 int fn_bc2(int3 pos, int3 dim);
@@ -38,9 +36,15 @@ int fn_bc2(int3 pos, int3 dim);
  */
 
 constant int3 off2[8] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
-constant int3 off3[27] = {{0,0,0},{1,0,0},{2,0,0},{0,1,0},{1,1,0},{2,1,0},{0,2,0},{1,2,0},{2,2,0},{0,0,1},{1,0,1},{2,0,1},{0,1,1},{1,1,1},{2,1,1},{0,2,1},{1,2,1},{2,2,1},{0,0,2},{1,0,2},{2,0,2},{0,1,2},{1,1,2},{2,1,2},{0,2,2},{1,2,2},{2,2,2}};
-
-
+constant int3 off3[27] = {  {0,0,0},{1,0,0},{2,0,0},
+                            {0,1,0},{1,1,0},{2,1,0},
+                            {0,2,0},{1,2,0},{2,2,0},
+                            {0,0,1},{1,0,1},{2,0,1},
+                            {0,1,1},{1,1,1},{2,1,1},
+                            {0,2,1},{1,2,1},{2,2,1},
+                            {0,0,2},{1,0,2},{2,0,2},
+                            {0,1,2},{1,1,2},{2,1,2},
+                            {0,2,2},{1,2,2},{2,2,2}};
 
 /*
  ===================================
@@ -49,22 +53,11 @@ constant int3 off3[27] = {{0,0,0},{1,0,0},{2,0,0},{0,1,0},{1,1,0},{2,1,0},{0,2,0
  */
 
 //flat index
-int fn_idx1(int3 pos, int3 dim)
+int fn_idx(int3 pos, int3 dim)
 {
     return pos.x + pos.y*dim.x + pos.z*dim.x*dim.y;
 }
 
-//index 2x2x2
-int fn_idx2(int3 pos)
-{
-    return pos.x + pos.y*2 + pos.z*4;
-}
-
-//index 3x3x3
-int fn_idx3(int3 pos)
-{
-    return pos.x + pos.y*3 + pos.z*9;
-}
 
 //in-bounds
 int fn_bc1(int3 pos, int3 dim)

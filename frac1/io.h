@@ -15,52 +15,23 @@ void wrt_coo(struct msh_obj *msh, struct ocl_obj *ocl)
 {
     //name
     char file1_name[250];
-    char file2_name[250];
-    char file3_name[250];
-    char file4_name[250];
-    char file5_name[250];
-
     sprintf(file1_name, "%s%s.raw", ROOT_WRITE, "vtx_uu");
-    sprintf(file2_name, "%s%s.raw", ROOT_WRITE, "vtx_ff");
-    sprintf(file3_name, "%s%s.raw", ROOT_WRITE, "coo_ii");
-    sprintf(file4_name, "%s%s.raw", ROOT_WRITE, "coo_jj");
-    sprintf(file5_name, "%s%s.raw", ROOT_WRITE, "coo_aa");
-    
+
     //open
     FILE* file1 = fopen(file1_name,"wb");
-    FILE* file2 = fopen(file2_name,"wb");
-    FILE* file3 = fopen(file3_name,"wb");
-    FILE* file4 = fopen(file4_name,"wb");
-    FILE* file5 = fopen(file5_name,"wb");
   
     //map
-    void *ptr1 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_u1, CL_TRUE, CL_MAP_READ, 0,     4*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
-    void *ptr2 = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_ff, CL_TRUE, CL_MAP_READ, 0,     4*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
-    void *ptr3 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_ii, CL_TRUE, CL_MAP_READ, 0, 27*16*msh->nv_tot*sizeof(int)  , 0, NULL, NULL, &ocl->err);
-    void *ptr4 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_jj, CL_TRUE, CL_MAP_READ, 0, 27*16*msh->nv_tot*sizeof(int)  , 0, NULL, NULL, &ocl->err);
-    void *ptr5 = clEnqueueMapBuffer(ocl->command_queue, ocl->coo_aa, CL_TRUE, CL_MAP_READ, 0, 27*16*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+    void *ptr1 = clEnqueueMapBuffer(ocl->command_queue, ocl->U1u, CL_TRUE, CL_MAP_READ, 0, 4*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
      
     //write
-    fwrite(ptr1, sizeof(float),     4*msh->nv_tot, file1);
-    fwrite(ptr2, sizeof(float),     4*msh->nv_tot, file2);
-    fwrite(ptr3, sizeof(int),   27*16*msh->nv_tot, file3);
-    fwrite(ptr4, sizeof(int),   27*16*msh->nv_tot, file4);
-    fwrite(ptr5, sizeof(float), 27*16*msh->nv_tot, file5);
-    
-    //close
-    fclose(file1);
-    fclose(file2);
-    fclose(file3);
-    fclose(file4);
-    fclose(file5);
+    fwrite(ptr1, sizeof(float), 4*msh->nv_tot, file1);
     
     //unmap
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_u1, ptr1, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_ff, ptr2, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_ii, ptr3, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_jj, ptr4, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->coo_aa, ptr5, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->U1u, ptr1, 0, NULL, NULL);
 
+    //close
+    fclose(file1);
+    
     return;
 }
 
@@ -112,7 +83,7 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     //map read
-    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_u1, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->U1u, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
     
     fprintf(file1,"\nPOINT_DATA %zu\n", msh->nv_tot);
     fprintf(file1,"VECTORS pv1 float\n");
@@ -131,7 +102,7 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
     }
 
     //unmap read
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_u1, ptr, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->U1u, ptr, 0, NULL, NULL);
     
     /*
      ===================
@@ -140,7 +111,7 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     //map read
-    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_ff, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->F1u, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
     
     fprintf(file1,"FIELD FieldData2 1\n");
     fprintf(file1,"pf2 4 %zu float\n", msh->nv_tot);
@@ -151,7 +122,7 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
     }
 
     //unmap read
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_ff, ptr, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->F1u, ptr, 0, NULL, NULL);
 
     fclose(file1);
 
