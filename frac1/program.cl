@@ -25,7 +25,6 @@ constant float mat_gam  = 1e0f;
  */
 
 int fn_idx(int3 pos, int3 dim);
-
 int fn_bc1(int3 pos, int3 dim);
 int fn_bc2(int3 pos, int3 dim);
 
@@ -78,49 +77,102 @@ int fn_bc2(int3 pos, int3 dim)
  */
 
 //init
-kernel void vtx_init(constant   float3 *buf_cc,
-                     global     float  *vtx_xx,
-                     global     float  *vtx_u0,
-                     global     float  *vtx_u1,
-                     global     float  *vtx_ff,
-                     global     int    *coo_ii,
-                     global     int    *coo_jj,
-                     global     float  *coo_aa)
+kernel void vtx_init(global float  *vtx_xx,
+                     global float  *U0u,
+                     global float  *U0c,
+                     global float  *U1u,
+                     global float  *U1c,
+                     global float  *F1u,
+                     global float  *F1c,
+                     global int    *Juu_ii,
+                     global int    *Juu_jj,
+                     global float  *Juu_vv,
+                     global int    *Juc_ii,
+                     global int    *Juc_jj,
+                     global float  *Juc_vv,
+                     global int    *Jcu_ii,
+                     global int    *Jcu_jj,
+                     global float  *Jcu_vv,
+                     global int    *Jcc_ii,
+                     global int    *Jcc_jj,
+                     global float  *Jcc_vv)
 {
     int3 vtx_dim = {get_global_size(0),get_global_size(1),get_global_size(2)};
     int3 vtx_pos = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
     
-    int vtx_idx = fn_idx1(vtx_pos, vtx_dim);
+//    printf("pos %v3d\n", vtx_pos);
     
-//    printf("idx %3d\n",vtx_idx);
-    printf("pos %v3d\n", vtx_pos);
+    int vtx_idx = fn_idx(vtx_pos, vtx_dim);
+    printf("idx %3d\n",vtx_idx);
     
-    int vtx_bc1 = fn_bc1(vtx_pos, vtx_dim);
-    int vtx_bc2 = fn_bc2(vtx_pos, vtx_dim);
+//    int vtx_bc1 = fn_bc1(vtx_pos, vtx_dim);
+//    int vtx_bc2 = fn_bc2(vtx_pos, vtx_dim);
+    
+    int blk_row = vtx_idx*27*9;
+    
+    //adj
+    for(int blk_idx=0; blk_idx<27; blk_idx++)
+    {
+        int3 adj_pos = vtx_pos + off3[blk_idx] - 1;
+        int  adj_idx = fn_idx(adj_pos, vtx_dim);
+        int  adj_bc1 = fn_bc1(adj_pos, vtx_dim);
+        
+        printf("adj %3d %d\n",adj_idx, adj_bc1);
+        
+        int blk_col = blk_idx*9;
+
+        //vals
+        int   ii[3][3];
+        int   jj[3][3];
+        float vv[3][3];
+        
+        //row
+        for(int i=0; i<3; i++)
+        {
+            //col
+            for(int j=0; j<3; j++)
+            {
+                ii[i][j] = adj_bc1*(3*vtx_idx + i);
+                jj[i][j] = adj_bc1*(3*adj_idx + j);
+                vv[i][j] = (vtx_idx==adj_idx)*(i==j);
+            }
+        }
+        
+        //write
+        memcpy((void*)&Juu_ii[blk_row + blk_col], ii, 9*sizeof(int));
+        memcpy((void*)&Juu_jj[blk_row + blk_col], jj, 9*sizeof(int));
+        memcpy((void*)&Juu_vv[blk_row + blk_col], vv, 9*sizeof(float));
+    }
     
     return;
 }
 
 
 //assemble
-kernel void vtx_assm(constant   float3 *buf_cc,
-                     global     float  *vtx_xx,
-                     global     float  *vtx_u0,
-                     global     float  *vtx_u1,
-                     global     float  *vtx_ff,
-                     global     int    *coo_ii,
-                     global     int    *coo_jj,
-                     global     float  *coo_aa)
+kernel void vtx_assm(global     float  *vtx_xx,
+                     global     float  *U0u,
+                     global     float  *U0c,
+                     global     float  *U1u,
+                     global     float  *U1c,
+                     global     float  *F1u,
+                     global     float  *F1c,
+                     global     int    *Juu_ii,
+                     global     int    *Juu_jj,
+                     global     float  *Juu_vv,
+                     global     int    *Juc_ii,
+                     global     int    *Juc_jj,
+                     global     float  *Juc_vv,
+                     global     int    *Jcu_ii,
+                     global     int    *Jcu_jj,
+                     global     float  *Jcu_vv,
+                     global     int    *Jcc_ii,
+                     global     int    *Jcc_jj,
+                     global     float  *Jcc_vv)
 {
-    //interior only
-    int3 vtx_dim = {get_global_size(0) + 2, get_global_size(1) + 2, get_global_size(2) + 2};
-    int3 vtx_pos = {get_global_id(0)   + 1, get_global_id(1)   + 1, get_global_id(2)   + 1};
+    int3 vtx_dim = {get_global_size(0),get_global_size(1),get_global_size(2)};
+    int3 vtx_pos = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
     
-    int vtx_idx = fn_idx1(vtx_pos, vtx_dim);
-    
-    printf("idx %3d\n",vtx_idx);
-//    printf("pos %v3d\n", vtx_pos);
-    
+    printf("pos %v3d %v3d\n", vtx_pos, vtx_dim);
 
     return;
 }
