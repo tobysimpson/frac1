@@ -13,22 +13,18 @@
 struct msh_obj
 {
     size_t      ne[3];      //ele_dim
-    
-    cl_float3   x0;         //x min
-    cl_float3   x1;         //x max
-    cl_float3   dx;
-    
-    
     size_t      nv[3];      //vtx_dim
     
     size_t      ne_tot;     //totals
     size_t      nv_tot;
     
+    cl_float3   x0;         //x min
+    cl_float3   x1;         //x max
+    cl_float3   dx;
+    
     size_t      ie[3];      //interior
     size_t      iv[3];
     
-
-
     cl_float3   cc[3];      //const for device
 };
 
@@ -36,7 +32,12 @@ struct msh_obj
 //init
 void msh_init(struct msh_obj *msh)
 {
-    //dims
+    //ele
+    msh->ne[0] = 4;
+    msh->ne[1] = msh->ne[0];
+    msh->ne[2] = msh->ne[0];
+    
+    //vtx
     msh->nv[0] = msh->ne[0] + 1;
     msh->nv[1] = msh->ne[1] + 1;
     msh->nv[2] = msh->ne[2] + 1;
@@ -50,6 +51,10 @@ void msh_init(struct msh_obj *msh)
     
     printf("ne_tot=%zu\n", msh->ne_tot);
     printf("nv_tot=%zu\n", msh->nv_tot);
+    
+    //size
+    msh->x0 = (cl_float3){0e0f, 0e0f, 0e0f};
+    msh->x1 = (cl_float3){1e0f, 1e0f, 1e0f};
     
     //dx
     msh->dx.x = (msh->x1.x - msh->x0.x)/(float)msh->ne[0];

@@ -7,32 +7,32 @@
 
 #include <stdio.h>
 #include <OpenCL/opencl.h>
+#include <Accelerate/Accelerate.h>
 
 #include "msh.h"
 #include "ocl.h"
-#include "wrt.h"
+#include "slv.h"
+#include "io.h"
 
 //here
 int main(int argc, const char * argv[])
 {
     printf("hello\n");
     
-    //params
-    size_t  ne = 4;
-    float   x0 = 0e0f;
-    float   x1 = 1e0f;
-    
     //objects
-    struct msh_obj msh= {{ne,ne,ne}, {x0,x0,x0}, {x1,x1,x1}};   //ne,x0,x1
+    struct msh_obj msh;
     struct ocl_obj ocl;
     
     //init
     msh_init(&msh);
     ocl_init(&msh, &ocl);
     
-    //calc
+    //assemble
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_init, 3, NULL, msh.nv, NULL, 0, NULL, NULL);
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, msh.iv, NULL, 0, NULL, NULL);
+    
+    //solve
+    slv_test1(1);
     
     //write
     wrt_coo(&msh, &ocl);

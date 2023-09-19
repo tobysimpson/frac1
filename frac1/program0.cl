@@ -6,6 +6,40 @@
 //
 
 
+//if you don't have opencl uncomment this:
+/*
+
+struct int3
+{
+    int x;
+    int y;
+    int z;
+};
+typedef struct int3 int3;
+
+struct float3
+{
+    float x;
+    float y;
+    float z;
+};
+typedef struct float3 float3;
+
+struct float8
+{
+    float s0;
+    float s1;
+    float s2;
+    float s3;
+    float s4;
+    float s5;
+    float s6;
+    float s7;
+};
+typedef struct float8 float8;
+
+ */
+
 /*
  ===================================
  params
