@@ -22,8 +22,8 @@ struct msh_obj
     cl_float3   x1;         //x max
     cl_float3   dx;
     
-    size_t      ie[3];      //interior
-    size_t      iv[3];
+//    size_t      ie[3];      //interior
+//    size_t      iv[3];
     
     cl_float3   cc[3];      //const for device
 };
@@ -33,7 +33,7 @@ struct msh_obj
 void msh_init(struct msh_obj *msh)
 {
     //ele
-    msh->ne[0] = 8;
+    msh->ne[0] = 2;
     msh->ne[1] = msh->ne[0];
     msh->ne[2] = msh->ne[0];
     
@@ -65,14 +65,14 @@ void msh_init(struct msh_obj *msh)
     printf("xmax=[%+f,%+f,%+f]\n", msh->x1.x, msh->x1.y, msh->x1.z);
     printf("dx  =[%+f,%+f,%+f]\n", msh->dx.x, msh->dx.y, msh->dx.z);
     
-    //interior dims
-    msh->ie[0] = msh->ne[0] - 2;
-    msh->ie[1] = msh->ne[1] - 2;
-    msh->ie[2] = msh->ne[2] - 2;
-
-    msh->iv[0] = msh->nv[0] - 2;
-    msh->iv[1] = msh->nv[1] - 2;
-    msh->iv[2] = msh->nv[2] - 2;
+//    //interior dims
+//    msh->ie[0] = msh->ne[0] - 2;
+//    msh->ie[1] = msh->ne[1] - 2;
+//    msh->ie[2] = msh->ne[2] - 2;
+//
+//    msh->iv[0] = msh->nv[0] - 2;
+//    msh->iv[1] = msh->nv[1] - 2;
+//    msh->iv[2] = msh->nv[2] - 2;
     
     //constants
     msh->cc[0] = msh->x0;

@@ -792,7 +792,6 @@ kernel void vtx_assm(constant   float3 *buf_cc,
             //basis
             float  bas_ee[8];
             float3 bas_gg[8];
-            
             bas_eval(qp, bas_ee);
             bas_grad(qp, bas_gg);
             
