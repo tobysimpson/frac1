@@ -33,7 +33,7 @@ struct msh_obj
 void msh_init(struct msh_obj *msh)
 {
     //ele
-    msh->ne[0] = 3;
+    msh->ne[0] = 2;
     msh->ne[1] = msh->ne[0];
     msh->ne[2] = msh->ne[0];
     

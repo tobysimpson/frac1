@@ -759,7 +759,7 @@ kernel void vtx_assm(constant   float3 *buf_cc,
     int vec_row = 4*vtx_idx;
     
     //loop ele
-    for(int vtx1=7; vtx1>=0; vtx1--)
+    for(int vtx1=7; vtx1>=0; vtx1--) //wierd behaviour otherwise
     {
         int ele1 = 7 - vtx1;
         int3 ele_pos = off2[ele1];
@@ -769,7 +769,6 @@ kernel void vtx_assm(constant   float3 *buf_cc,
         //soln 2x2x2
         float uu20[8][4];
         float uu21[8][4];
-        
         mem_read2(uu30, uu20, ele_pos);
         mem_read2(uu31, uu21, ele_pos);
         
@@ -898,7 +897,7 @@ kernel void vtx_assm(constant   float3 *buf_cc,
                         float8 S22 = mec_S(E22);
 
                         //write block uu
-                        coo_aa[blk_row + blk_col + 4*dim1+dim2] += sym_tip(sym_add(sym_smul(S21, c1), S22),E1)*qw;
+                        coo_aa[blk_row + blk_col + 4*dim1 + dim2] += sym_tip(sym_add(sym_smul(S21, c1), S22),E1)*qw;
                         
                     }//dim2
                     
