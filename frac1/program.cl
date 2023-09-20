@@ -275,18 +275,20 @@ kernel void vtx_assm(global float3 *vtx_xx,
     int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
     printf("vtx1_idx1 %3d\n", vtx1_idx1);
     
+    //volume
     float vlm = dx*dx*dx;
     
     //ele1
     for(int ele1_idx2=0; ele1_idx2<8; ele1_idx2++)
     {
-        int3 ele1_pos1 = vtx1_pos1 + off2[ele1_idx2] - 1;
+        int3 ele1_pos2 = off2[ele1_idx2];
+        int3 ele1_pos1 = vtx1_pos1 + ele1_pos2 - 1;
         int  ele1_bnd1 = fn_bnd1(ele1_pos1, ele_dim);
         int  vtx1_idx2 = (uint)(7 - ele1_idx2);
         
         printf("ele1_pos1 %+v3d %d %d\n", ele1_pos1, ele1_bnd1, vtx1_idx2);
         
-        //qpt1 (change limit with scheme 1,8,27)
+        //qpt1 (change limit with scheme 2pt = 2x2x2 = 8)
         for(int qpt1=0; qpt1<8; qpt1++)
         {
             //2pt
@@ -301,6 +303,18 @@ kernel void vtx_assm(global float3 *vtx_xx,
             bas_eval(qp, bas_ee);
             bas_grad(qp, bas_gg, dx);
             
+            //lots here
+            
+            
+            //vtx2
+            for(int vtx2_idx2=0; vtx2_idx2<8; vtx2_idx2++)
+            {
+                int3 vtx2_pos3 = ele1_pos2 + off2[vtx2_idx2];
+                int  vtx2_idx3 = fn_idx3(vtx2_pos3);
+                
+                printf("vtx2 %v3d %d\n", vtx2_pos3, vtx2_idx3);
+                
+            } //vtx2
             
         } //qpt
         

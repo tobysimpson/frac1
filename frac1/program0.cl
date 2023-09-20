@@ -414,7 +414,7 @@ float8 mec_S(float8 E)
     return (float8){a*E.s0 + b, a*E.s1, a*E.s2, a*E.s3 + b, a*E.s4, a*E.s5 + b, 0e0f, 0e0f};
 }
 
-//energy phi = 0.5*lam*(tr(e))^2 + mu*tr(e^2)
+//energy phi = 0.5*lam*(tr(E))^2 + mu*tr(E^2)
 float mec_p(float8 E)
 {
     return 5e-1f*mat_lam*pown(sym_tr(E),2) + mat_mu*sym_tr(sym_prod(E,E));
