@@ -146,8 +146,8 @@ kernel void vtx_init(global float  *vtx_xx,
     //rhs u
     for(int dim1=0; dim1<3; dim1++)
     {
+        //u
         int idx_u = 3*vtx1_idx1 + dim1;
-        
         U0u[idx_u] = vtx1_idx1 + 1e-1f*dim1;
         U1u[idx_u] = vtx1_idx1 + 1e-1f*dim1;
         F1u[idx_u] = vtx1_idx1 + 1e-1f*dim1;
@@ -163,9 +163,8 @@ kernel void vtx_init(global float  *vtx_xx,
 
         printf("vtx2 %3d %d\n", vtx2_idx1, vtx2_bnd1);
 
-        int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
-        
         //cc
+        int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
         Jcc_ii[idx_cc] = vtx2_bnd1*vtx1_idx1;
         Jcc_jj[idx_cc] = vtx2_bnd1*vtx2_idx1;
         Jcc_vv[idx_cc] = vtx2_bnd1;
@@ -174,19 +173,26 @@ kernel void vtx_init(global float  *vtx_xx,
         for(int dim1=0; dim1<3; dim1++)
         {
             //uc
+            int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+            Juc_ii[idx_uc] = vtx2_bnd1*(3*vtx1_idx1 + dim1);
+            Juc_jj[idx_uc] = vtx2_bnd1*(vtx2_idx1);
+            Juc_vv[idx_uc] = vtx2_bnd1*(dim1+1);
             
-            //cu
+            //uc
+            int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+            Jcu_ii[idx_cu] = vtx2_bnd1*(vtx1_idx1);
+            Jcu_jj[idx_cu] = vtx2_bnd1*(3*vtx2_idx1  + dim1);
+            Jcu_vv[idx_cu] = vtx2_bnd1*(dim1+1);
             
             
             //col
             for(int dim2=0; dim2<3; dim2++)
             {
-                int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
-
                 //cc
+                int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
                 Juu_ii[idx_uu] = vtx2_bnd1*(3*vtx1_idx1 + dim1);
                 Juu_jj[idx_uu] = vtx2_bnd1*(3*vtx2_idx1 + dim2);
-                Juu_vv[idx_uu] = vtx2_bnd1*(3*dim1 + dim2);
+                Juu_vv[idx_uu] = vtx2_bnd1*(3*dim1 + dim2 + 1);
             }
         }
     }

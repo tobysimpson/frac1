@@ -41,6 +41,14 @@ int main(int argc, const char * argv[])
     wrt_raw(&ocl, ocl.Juu_jj, 27*9*msh.nv_tot, sizeof(int),   "Juu_jj");
     wrt_raw(&ocl, ocl.Juu_vv, 27*9*msh.nv_tot, sizeof(float), "Juu_vv");
     
+    wrt_raw(&ocl, ocl.Juc_ii, 27*3*msh.nv_tot, sizeof(int),   "Juc_ii");
+    wrt_raw(&ocl, ocl.Juc_jj, 27*3*msh.nv_tot, sizeof(int),   "Juc_jj");
+    wrt_raw(&ocl, ocl.Juc_vv, 27*3*msh.nv_tot, sizeof(float), "Juc_vv");
+    
+    wrt_raw(&ocl, ocl.Jcu_ii, 27*3*msh.nv_tot, sizeof(int),   "Jcu_ii");
+    wrt_raw(&ocl, ocl.Jcu_jj, 27*3*msh.nv_tot, sizeof(int),   "Jcu_jj");
+    wrt_raw(&ocl, ocl.Jcu_vv, 27*3*msh.nv_tot, sizeof(float), "Jcu_vv");
+    
     wrt_raw(&ocl, ocl.Jcc_ii, 27*msh.nv_tot, sizeof(int),   "Jcc_ii");
     wrt_raw(&ocl, ocl.Jcc_jj, 27*msh.nv_tot, sizeof(int),   "Jcc_jj");
     wrt_raw(&ocl, ocl.Jcc_vv, 27*msh.nv_tot, sizeof(float), "Jcc_vv");
