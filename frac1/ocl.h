@@ -27,9 +27,7 @@ struct ocl_obj
     char                device_str[100];
         
     //device memory
-//    cl_mem              buf_cc;
     cl_mem              vtx_xx;
-    
     
     cl_mem              U0u;    //prior
     cl_mem              U0c;
@@ -162,9 +160,6 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
     
     //CL_MEM_HOST_READ_ONLY/CL_MEM_HOST_NO_ACCESS
 
-    //constants
-//    ocl->buf_cc = clCreateBuffer(ocl->context, CL_MEM_READ_ONLY | CL_MEM_HOST_NO_ACCESS | CL_MEM_COPY_HOST_PTR, 3*sizeof(cl_float3), (void*)&msh->cc, &ocl->err);
-
     //memory
     ocl->vtx_xx = clCreateBuffer(ocl->context, CL_MEM_HOST_READ_ONLY,    3*msh->nv_tot*sizeof(float), NULL, &ocl->err);
     
@@ -253,7 +248,6 @@ void ocl_final(struct ocl_obj *ocl)
     ocl->err = clReleaseKernel(ocl->vtx_assm);
 
     //memory
-//    ocl->err = clReleaseMemObject(ocl->buf_cc);
     ocl->err = clReleaseMemObject(ocl->vtx_xx);
     ocl->err = clReleaseMemObject(ocl->U0u);
     ocl->err = clReleaseMemObject(ocl->U0c);
