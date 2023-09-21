@@ -484,10 +484,10 @@ float3 eig_val(float8 A)
 //eigenvectors - Kopp2008
 void eig_vec(float8 A, float3 dd, float3 v[3])
 {
-    //cross, normalise, skip when lam=0
-    v[0] = vec_smulf(vec_cross((float3){A.s0-dd.x, A.s1, A.s2},(float3){A.s1, A.s3-dd.x, A.s4}), (float)(dd.x==0e0f));
-    v[1] = vec_smulf(vec_cross((float3){A.s0-dd.y, A.s1, A.s2},(float3){A.s1, A.s3-dd.y, A.s4}), (float)(dd.y==0e0f));
-    v[2] = vec_smulf(vec_cross((float3){A.s0-dd.z, A.s1, A.s2},(float3){A.s1, A.s3-dd.z, A.s4}), (float)(dd.z==0e0f));
+    //cross, normalise, skip when lam=0??
+    v[0] = vec_smulf(vec_cross((float3){A.s0-dd.x, A.s1, A.s2},(float3){A.s1, A.s3-dd.x, A.s4}), (float)(dd.x!=0e0f));
+    v[1] = vec_smulf(vec_cross((float3){A.s0-dd.y, A.s1, A.s2},(float3){A.s1, A.s3-dd.y, A.s4}), (float)(dd.y!=0e0f));
+    v[2] = vec_smulf(vec_cross((float3){A.s0-dd.z, A.s1, A.s2},(float3){A.s1, A.s3-dd.z, A.s4}), (float)(dd.z!=0e0f));
 
     return;
 }
