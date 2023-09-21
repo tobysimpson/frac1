@@ -561,7 +561,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
 //    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
     
     int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
-    printf("vtx1_idx1 %3d\n", vtx1_idx1);
+    printf("vtx1 %3d\n", vtx1_idx1);
     
     //volume
     float vlm = dx*dx*dx;
@@ -574,18 +574,22 @@ kernel void vtx_assm(global float3 *vtx_xx,
     mem_r3f(U1c, U1c3, vtx1_pos1, vtx_dim);
     mem_r3f3(U1u, U1u3, vtx1_pos1, vtx_dim);
     
+    //reset
+    int vtx1_idx2 = 8; //wierd subraction thing
+    
     //ele1
     for(int ele1_idx2=0; ele1_idx2<8; ele1_idx2++)
     {
         int3 ele1_pos2 = off2[ele1_idx2];
         int3 ele1_pos1 = vtx1_pos1 + ele1_pos2 - 1;
         int  ele1_bnd1 = fn_bnd1(ele1_pos1, ele_dim);
-        int  vtx1_idx2 = (uint)(7 - ele1_idx2);
+        vtx1_idx2 -= 1;
         
         //in-bounds
         if(ele1_bnd1)
         {
-            printf("ele1_pos1 %+v3d %d %d\n", ele1_pos1, ele1_bnd1, vtx1_idx2);
+            printf("ele1 %d %d\n", ele1_idx2, vtx1_idx2);
+//            printf("ele1 %d %+v3d %d %d\n", ele1_idx2, ele1_pos1, ele1_bnd1, vtx1_idx2);
             
             //read
             float U0c2[8];
@@ -613,6 +617,8 @@ kernel void vtx_assm(global float3 *vtx_xx,
                 float3 bas_gg[8];
                 bas_eval(qp, bas_ee);
                 bas_grad(qp, bas_gg, dx);
+                
+                printf("bas %d %+v3f\n", vtx1_idx2, bas_gg[vtx1_idx2]);
                 
                 //interp
                 float ch0 = bas_itpe(U0c2, bas_ee);
