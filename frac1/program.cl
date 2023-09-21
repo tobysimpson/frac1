@@ -35,11 +35,14 @@ int fn_bnd2(int3 pos, int3 dim);
 void bas_eval(float3 p, float ee[8]);
 void bas_grad(float3 p, float3 gg[8], float dx);
 
-void mem_r3(global float *buf, float uu3[27], int3 pos, int3 dim);
-void mem_r2(float uu3[27], float uu2[8], int3 pos);
+float bas_itpe(float  uu2[8], float  bas_ee[8]);
+void  bas_itpg(float3 uu2[8], float3 bas_gg[8], float3 u_grad[3]);
 
-void mem_r3v3(global float *buf, float uu3[27][3], int3 pos, int3 dim);
-void mem_r2v3(float uu3[27][3], float uu2[8][3], int3 pos);
+void mem_r3f(global float *buf, float uu3[27], int3 pos, int3 dim);
+void mem_r2f(float uu3[27], float uu2[8], int3 pos);
+
+void mem_r3f3(global float *buf, float3 uu3[27], int3 pos, int3 dim);
+void mem_r2f3(float3 uu3[27], float3 uu2[8], int3 pos);
 
 /*
  ===================================
@@ -148,6 +151,31 @@ void bas_grad(float3 p, float3 gg[8], float dx)
     return;
 }
 
+
+//interp eval
+float bas_itpe(float uu2[8], float bas_ee[8])
+{
+    float u = 0e0f;
+    
+    for(int i=0; i<8; i++)
+    {
+        u += uu2[i]*bas_ee[i];
+    }
+    return u;
+}
+
+//interp grad, u_grad[i] = du[i]/{dx,dy,dz}
+void bas_itpg(float3 uu2[8], float3 bas_gg[8], float3 u_grad[3])
+{
+    for(int i=0; i<8; i++)
+    {
+        u_grad[0] += uu2[i].x*bas_gg[i];
+        u_grad[1] += uu2[i].y*bas_gg[i];
+        u_grad[2] += uu2[i].z*bas_gg[i];
+    }
+    return;
+}
+
 /*
  ===================================
  memory
@@ -155,7 +183,7 @@ void bas_grad(float3 p, float3 gg[8], float dx)
  */
 
 //read 3x3x3 from global
-void mem_r3(global float *buf, float uu3[27], int3 pos, int3 dim)
+void mem_r3f(global float *buf, float uu3[27], int3 pos, int3 dim)
 {
     for(int i=0; i<27; i++)
     {
@@ -169,7 +197,7 @@ void mem_r3(global float *buf, float uu3[27], int3 pos, int3 dim)
 }
 
 //read 2x2x2 from 3x3x3
-void mem_r2(float uu3[27], float uu2[8], int3 pos)
+void mem_r2f(float uu3[27], float uu2[8], int3 pos)
 {
     for(int i=0; i<8; i++)
     {
@@ -184,23 +212,21 @@ void mem_r2(float uu3[27], float uu2[8], int3 pos)
 
 
 //read 3x3x3 vector from global
-void mem_r3v3(global float *buf, float uu3[27][3], int3 pos, int3 dim)
+void mem_r3f3(global float *buf, float3 uu3[27], int3 pos, int3 dim)
 {
     for(int i=0; i<27; i++)
     {
         int3 adj_pos1 = pos + off3[i] - 1;
         int  adj_idx1 = fn_idx1(adj_pos1, dim);
 
-        //copy
-        uu3[i][0] = buf[adj_idx1];
-        uu3[i][1] = buf[adj_idx1+1];
-        uu3[i][2] = buf[adj_idx1+2];
+        //copy/cast
+        uu3[i] = (float3){buf[adj_idx1], buf[adj_idx1+1], buf[adj_idx1+2]};
     }
     return;
 }
 
 //read 2x2x2 from 3x3x3
-void mem_r2v3(float uu3[27][3], float uu2[8][3], int3 pos)
+void mem_r2f3(float3 uu3[27], float3 uu2[8], int3 pos)
 {
     for(int i=0; i<8; i++)
     {
@@ -208,9 +234,7 @@ void mem_r2v3(float uu3[27][3], float uu2[8][3], int3 pos)
         int  adj_idx3 = fn_idx3(adj_pos3);
 
         //copy
-        uu2[i][0] = uu3[adj_idx3][0];
-        uu2[i][1] = uu3[adj_idx3][1];
-        uu2[i][2] = uu3[adj_idx3][2];
+        uu2[i] = uu3[adj_idx3];
     }
     return;
 }
@@ -356,10 +380,10 @@ kernel void vtx_assm(global float3 *vtx_xx,
     //read
     float U0c3[27];
     float U1c3[27];
-    float U1u3[27][3];
-    mem_r3(U0c, U0c3, vtx1_pos1, vtx_dim);
-    mem_r3(U1c, U1c3, vtx1_pos1, vtx_dim);
-    mem_r3v3(U1u, U1u3, vtx1_pos1, vtx_dim);
+    float3 U1u3[27];
+    mem_r3f(U0c, U0c3, vtx1_pos1, vtx_dim);
+    mem_r3f(U1c, U1c3, vtx1_pos1, vtx_dim);
+    mem_r3f3(U1u, U1u3, vtx1_pos1, vtx_dim);
     
     //ele1
     for(int ele1_idx2=0; ele1_idx2<8; ele1_idx2++)
@@ -377,10 +401,10 @@ kernel void vtx_assm(global float3 *vtx_xx,
             //read
             float U0c2[8];
             float U1c2[8];
-            float U1u2[8][3];
-            mem_r2(U0c3, U0c2, ele1_pos2);
-            mem_r2(U1c3, U1c2, ele1_pos2);
-            mem_r2v3(U1u3, U1u2, ele1_pos2);
+            float3 U1u2[8];
+            mem_r2f(U0c3, U0c2, ele1_pos2);
+            mem_r2f(U1c3, U1c2, ele1_pos2);
+            mem_r2f3(U1u3, U1u2, ele1_pos2);
             
             //qpt1 (change limit with scheme 1,8,27)
             for(int qpt1=0; qpt1<1; qpt1++)
@@ -401,7 +425,13 @@ kernel void vtx_assm(global float3 *vtx_xx,
                 bas_eval(qp, bas_ee);
                 bas_grad(qp, bas_gg, dx);
                 
+                //interp
+                float c0 = bas_itpe(U0c2, bas_ee);
+                float c1 = bas_itpe(U1c2, bas_ee);
                 
+                //grad
+                float3 u1_grad[3] = {{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f}};
+                bas_itpg(U1u2, bas_gg, u1_grad);
                 
                 //rhs c
                 int idx_c = vtx1_idx1;
