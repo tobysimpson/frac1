@@ -353,15 +353,13 @@ kernel void vtx_assm(global float3 *vtx_xx,
     //volume
     float vlm = dx*dx*dx;
     
-    //read soln
+    //read
     float U0c3[27];
     float U1c3[27];
+    float U1u3[27][3];
     mem_r3(U0c, U0c3, vtx1_pos1, vtx_dim);
     mem_r3(U1c, U1c3, vtx1_pos1, vtx_dim);
-    
-    float U1u3[27][3];
     mem_r3v3(U1u, U1u3, vtx1_pos1, vtx_dim);
-    
     
     //ele1
     for(int ele1_idx2=0; ele1_idx2<8; ele1_idx2++)
@@ -376,15 +374,13 @@ kernel void vtx_assm(global float3 *vtx_xx,
         {
             printf("ele1_pos1 %+v3d %d %d\n", ele1_pos1, ele1_bnd1, vtx1_idx2);
             
-            //read soln
+            //read
             float U0c2[8];
             float U1c2[8];
+            float U1u2[8][3];
             mem_r2(U0c3, U0c2, ele1_pos2);
             mem_r2(U1c3, U1c2, ele1_pos2);
-            
-            float U1u2[8][3];
             mem_r2v3(U1u3, U1u2, ele1_pos2);
-            
             
             //qpt1 (change limit with scheme 1,8,27)
             for(int qpt1=0; qpt1<1; qpt1++)
