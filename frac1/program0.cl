@@ -95,7 +95,7 @@ float  sym_tip(float8 A, float8 B);
 float8 sym_smul(float8 A, float b);
 float8 sym_add(float8 A, float8 B);
 
-float8 mec_E(float3 g[3]);
+float8 mec_E(float3 g[4]);
 float8 mec_S(float8 E);
 float  mec_p(float8 E);
 
@@ -399,8 +399,8 @@ float8 sym_add(float8 A, float8 B)
  ===================================
  */
 
-//strain
-float8 mec_E(float3 g[3])
+//strain (du + du^T)/2
+float8 mec_E(float3 g[4])
 {
     return (float8){g[0].x, 5e-1f*(g[0].y+g[1].x), 5e-1f*(g[0].z+g[2].x), g[1].y, 5e-1f*(g[1].z+g[2].y), g[2].z, 0e0f, 0e0f};
 }
@@ -750,7 +750,6 @@ kernel void vtx_assm(constant   float3 *buf_cc,
     //soln 3x3x3
     float uu30[27][4];
     float uu31[27][4];
-    
     mem_read3(vtx_u0, uu30, vtx_pos, vtx_dim);
     mem_read3(vtx_u1, uu31, vtx_pos, vtx_dim);
     
