@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		DA1F506A2ABDBBFF00C1AA4D /* program.cl in Sources */ = {isa = PBXBuildFile; fileRef = DA653A2B2A4056450025D507 /* program.cl */; };
 		DA653A252A40528B0025D507 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = DA653A242A40528B0025D507 /* main.c */; };
 /* End PBXBuildFile section */
 
@@ -23,6 +24,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		DA1F50682ABDB34A00C1AA4D /* program1.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = program1.cl; sourceTree = "<group>"; };
 		DA5CDCD02AB88A77004DF108 /* slv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slv.h; sourceTree = "<group>"; };
 		DA5CDCD12AB9883D004DF108 /* program0.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = program0.cl; sourceTree = "<group>"; };
 		DA653A212A40528B0025D507 /* frac1 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = frac1; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -69,6 +71,7 @@
 				DA653A302A406C480025D507 /* io.h */,
 				DA653A242A40528B0025D507 /* main.c */,
 				DA653A2B2A4056450025D507 /* program.cl */,
+				DA1F50682ABDB34A00C1AA4D /* program1.cl */,
 				DA5CDCD12AB9883D004DF108 /* program0.cl */,
 			);
 			path = frac1;
@@ -132,6 +135,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DA653A252A40528B0025D507 /* main.c in Sources */,
+				DA1F506A2ABDBBFF00C1AA4D /* program.cl in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

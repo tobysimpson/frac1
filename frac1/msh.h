@@ -17,6 +17,10 @@ struct msh_obj
     
     size_t      ne_tot;     //totals
     size_t      nv_tot;
+    
+    size_t      f1[2];      //face
+    
+    cl_ulong3   vtx_dim;
 };
 
 
@@ -32,6 +36,12 @@ void msh_init(struct msh_obj *msh)
     msh->nv[0] = msh->ne[0] + 1;
     msh->nv[1] = msh->ne[1] + 1;
     msh->nv[2] = msh->ne[2] + 1;
+    
+    //face
+    msh->f1[0] = msh->nv[1];    //x=y*z
+    msh->f1[1] = msh->nv[2];
+    
+    msh->vtx_dim = (cl_ulong3){msh->nv[0], msh->nv[1], msh->nv[2]};
     
     //totals
     msh->ne_tot = msh->ne[0]*msh->ne[1]*msh->ne[2];
