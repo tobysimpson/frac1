@@ -506,13 +506,66 @@ kernel void vtx_bnd1(ulong3 vtx_dim,
 {
     ulong3 vtx1_pos1  = {0, get_global_id(0), get_global_id(1)}; //x=0
     
-//    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
-    
-        printf("vtx_dim %v3d\n", vtx_dim);
-    
+    //    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
+    //    printf("vtx_dim %v3d\n", vtx_dim);
     
     int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
-    printf("vtx1 %3d\n", vtx1_idx1);
+//    printf("vtx1 %3d\n", vtx1_idx1);
+    
+    
+    //rhs u
+    for(int dim1=0; dim1<3; dim1++)
+    {
+        //u
+        int idx_u = 3*vtx1_idx1 + dim1;
+        U0u[idx_u] = 0e0f;
+        U1u[idx_u] = 0e0f;
+        F1u[idx_u] = 0e0f;
+    }
+    
+    //vtx2
+    for(int vtx2_idx3=0; vtx2_idx3<27; vtx2_idx3++)
+    {
+        ulong3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
+        int  vtx2_idx1 = fn_idx1(vtx2_pos1, vtx_dim);
+        int  vtx2_bnd1 = fn_bnd1(vtx2_pos1, vtx_dim);
+
+//        printf("vtx2_pos1 %+v3d %d\n", vtx2_pos1, vtx2_bnd1);
+
+        //cc
+        int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
+        Jcc_ii[idx_cc] = vtx2_bnd1*vtx1_idx1;
+        Jcc_jj[idx_cc] = vtx2_bnd1*vtx2_idx1;
+        Jcc_vv[idx_cc] = (vtx1_idx1==vtx2_idx1);
+        
+        //dim1
+        for(int dim1=0; dim1<3; dim1++)
+        {
+            //they are transposes => redundancy if needed
+            
+            //uc
+            int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+            Juc_ii[idx_uc] = vtx2_bnd1*(3*vtx1_idx1 + dim1);
+            Juc_jj[idx_uc] = vtx2_bnd1*(vtx2_idx1);
+            Juc_vv[idx_uc] = 0e0f;
+            
+            //cu
+            int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+            Jcu_ii[idx_cu] = vtx2_bnd1*(vtx1_idx1);
+            Jcu_jj[idx_cu] = vtx2_bnd1*(3*vtx2_idx1  + dim1);
+            Jcu_vv[idx_cu] = 0e0f;
+            
+            //dim2
+            for(int dim2=0; dim2<3; dim2++)
+            {
+                //cc
+                int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
+                Juu_ii[idx_uu] = vtx2_bnd1*(3*vtx1_idx1 + dim1);
+                Juu_jj[idx_uu] = vtx2_bnd1*(3*vtx2_idx1 + dim2);
+                Juu_vv[idx_uu] = (vtx1_idx1==vtx2_idx1)*(dim1==dim2);
+            } //dim2
+        } //dim1
+    } //vtx2
 
     return;
 }

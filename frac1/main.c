@@ -33,7 +33,7 @@ int main(int argc, const char * argv[])
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_bnd1, 2, NULL, msh.f1, NULL, 0, NULL, NULL);
     
     //solve
-//    slv_test1(1);
+    slv_test1(&msh, &ocl);
     
     //write
     wrt_raw(&ocl, ocl.Juu_ii, 27*9*msh.nv_tot, sizeof(int),   "Juu_ii");
