@@ -81,7 +81,7 @@ int fn_idx3(ulong3 pos)
 //in-bounds
 int fn_bnd1(ulong3 pos, ulong3 dim)
 {
-    return all(pos>-1)*all(pos<dim);
+    return all(pos>=0)*all(pos<dim);
 }
 
 /*
@@ -279,7 +279,7 @@ kernel void vtx_init(global float3 *vtx_xx,
     //vtx2
     for(int vtx2_idx3=0; vtx2_idx3<27; vtx2_idx3++)
     {
-        ulong3 vtx2_pos1 = vtx1_pos1 + convert_ulong3(off3[vtx2_idx3] - 1);
+        ulong3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
         int  vtx2_idx1 = fn_idx1(vtx2_pos1, vtx_dim);
         int  vtx2_bnd1 = fn_bnd1(vtx2_pos1, vtx_dim);
 
@@ -361,7 +361,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
     //ele1
     for(uint ele1_idx2=0; ele1_idx2<8; ele1_idx2++)
     {
-        ulong3 ele1_pos2 = convert_ulong3(off2[ele1_idx2]);
+        ulong3 ele1_pos2 = off2[ele1_idx2];
         ulong3 ele1_pos1 = vtx1_pos1 + ele1_pos2 - 1;
         int  ele1_bnd1 = fn_bnd1(ele1_pos1, ele_dim);
         int  vtx1_idx2 = 7 - ele1_idx2;
@@ -504,7 +504,7 @@ kernel void vtx_bnd1(ulong3 vtx_dim,
                      global int    *Jcc_jj,
                      global float  *Jcc_vv)
 {
-    ulong3 vtx1_pos1  = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
+    ulong3 vtx1_pos1  = {0, get_global_id(0), get_global_id(1)}; //x=0
     
 //    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
     
@@ -512,7 +512,7 @@ kernel void vtx_bnd1(ulong3 vtx_dim,
     
     
     int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
-//    printf("vtx1 %3d\n", vtx1_idx1);
+    printf("vtx1 %3d\n", vtx1_idx1);
 
     return;
 }
