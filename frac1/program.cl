@@ -588,7 +588,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
         //in-bounds
         if(ele1_bnd1)
         {
-            printf("ele1 %d %d\n", ele1_idx2, vtx1_idx2);
+//            printf("ele1 %d %d\n", ele1_idx2, vtx1_idx2);
 //            printf("ele1 %d %+v3d %d %d\n", ele1_idx2, ele1_pos1, ele1_bnd1, vtx1_idx2);
             
             //read
@@ -618,7 +618,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
                 bas_eval(qp, bas_ee);
                 bas_grad(qp, bas_gg, dx);
                 
-                printf("bas %d %+v3f\n", vtx1_idx2, bas_gg[vtx1_idx2]);
+//                printf("bas %d %+v3f\n", vtx1_idx2, bas_gg[vtx1_idx2]);
                 
                 //interp
                 float ch0 = bas_itpe(U0c2, bas_ee);

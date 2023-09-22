@@ -6,6 +6,8 @@
 //
 
 
+//this is now old and not part of the code
+
 //if you don't have opencl uncomment this:
 /*
 
