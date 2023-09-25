@@ -88,42 +88,43 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
      vecs
      ========================
      */
-    
-    printf("u\n");
-    
-    float u_vv[4] = {1,2,3,4};
 
+    
+    //map read
+    float*  uu = clEnqueueMapBuffer(ocl->command_queue, ocl->U1u, CL_TRUE, CL_MAP_READ, 0, 3*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+    float*  ff = clEnqueueMapBuffer(ocl->command_queue, ocl->F1u, CL_TRUE, CL_MAP_READ, 0, 3*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+
+    //create
     DenseVector_Float u;
-    u.count = 4;
-    u.data = u_vv;
+    u.count = 3*msh->nv_tot;
+    u.data = uu;
     
-    dsp_vec(u);
-
+    DenseVector_Float f;
+    f.count = 3*msh->nv_tot;
+    f.data = ff;
     
-    printf("b\n");
+    //unmap read
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->U1u, uu, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->F1u, ff, 0, NULL, NULL);
     
-    float b_vv[4] = {0,0,0,0};
+//    dsp_vec(u);
+//    dsp_vec(f);
 
-    DenseVector_Float b;
-    b.count = 4;
-    b.data = b_vv;
-
-    dsp_vec(b);
     
     /*
      ========================
      multiply
      ========================
      */
-
-    printf("Au\n");
-    SparseMultiply(A,u,b);
-    dsp_vec(b);
-    
-    //reset - wont solve without reset
-    memset(u.data, 0e0f, 4*sizeof(float));
-    printf("u\n");
-    dsp_vec(u);
+//
+//    printf("Au\n");
+//    SparseMultiply(A,u,b);
+//    dsp_vec(b);
+//
+//    //reset - wont solve without reset
+//    memset(u.data, 0e0f, 4*sizeof(float));
+//    printf("u\n");
+//    dsp_vec(u);
     
     /*
      ========================
@@ -132,13 +133,13 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     //iterate
-    SparseSolve(SparseConjugateGradient(), A, b, u);    //yes SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
-//    SparseSolve(SparseGMRES(), A, b, u);              //yes
-//    SparseSolve(SparseLSMR(), A, b, u);               //yes
+    SparseSolve(SparseConjugateGradient(), A, f, u);    //yes SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
+//    SparseSolve(SparseGMRES(), A, f, u);              //yes
+//    SparseSolve(SparseLSMR(), A, f, u);               //yes
     
     //QR
 //    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //yes
-//    SparseSolve(QR, b , u);
+//    SparseSolve(QR, f , u);
 //    SparseCleanup(A_QR);
     
     printf("u\n");
