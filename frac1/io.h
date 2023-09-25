@@ -65,66 +65,125 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     //map read
-    cl_float4 *ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_xx, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    float *ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->vtx_xx, CL_TRUE, CL_MAP_READ, 0, 3*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
     
-    fprintf(file1,"POINTS %zu float\n", msh->nv_tot);
+    fprintf(file1,"\nPOINTS %zu float\n", msh->nv_tot);
 
-    
     for(int i=0; i<msh->nv_tot; i++)
     {
-        fprintf(file1, "%e %e %e\n", ptr[i].x, ptr[i].y, ptr[i].z);
+        int row = 3*i;
+        fprintf(file1, "%e %e %e\n", ptr[row], ptr[row+1], ptr[row+2]);
     }
 
     //unmap read
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->vtx_xx, ptr, 0, NULL, NULL);
     
+    //point data flag
+    fprintf(file1,"\nPOINT_DATA %zu\n", msh->nv_tot);
+    
     /*
      ===================
-     soln
+     soln u
      ===================
      */
     
     //map read
-    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->U1u, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->U1u, CL_TRUE, CL_MAP_READ, 0, 3*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
     
-    fprintf(file1,"\nPOINT_DATA %zu\n", msh->nv_tot);
-    fprintf(file1,"VECTORS pv1 float\n");
-    
-    for(int i=0; i<msh->nv_tot; i++)
-    {
-        fprintf(file1, "%e %e %e\n", ptr[i].x, ptr[i].y, ptr[i].z);
-    }
-    
-    fprintf(file1,"FIELD FieldData1 1\n");
-    fprintf(file1,"pf1 4 %zu float\n", msh->nv_tot);
+    fprintf(file1,"VECTORS U1u float\n");
     
     for(int i=0; i<msh->nv_tot; i++)
     {
-        fprintf(file1, "%e %e %e %e\n", ptr[i].x, ptr[i].y, ptr[i].z, ptr[i].w);
+        int row = 3*i;
+        fprintf(file1, "%e %e %e\n", ptr[row], ptr[row+1], ptr[row+2]);
     }
-
+    
     //unmap read
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->U1u, ptr, 0, NULL, NULL);
     
     /*
      ===================
-     rhs
+     rhs u
      ===================
      */
     
     //map read
-    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->F1u, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(cl_float4), 0, NULL, NULL, &ocl->err);
+    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->F1u, CL_TRUE, CL_MAP_READ, 0, 3*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
     
-    fprintf(file1,"FIELD FieldData2 1\n");
-    fprintf(file1,"pf2 4 %zu float\n", msh->nv_tot);
+    fprintf(file1,"VECTORS F1u float\n");
     
     for(int i=0; i<msh->nv_tot; i++)
     {
-        fprintf(file1, "%e %e %e %e\n", ptr[i].x, ptr[i].y, ptr[i].z, ptr[i].w);
+        int row = 3*i;
+        fprintf(file1, "%e %e %e\n", ptr[row], ptr[row+1], ptr[row+2]);
     }
 
     //unmap read
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->F1u, ptr, 0, NULL, NULL);
+    
+    
+    /*
+     ===================
+     soln c
+     ===================
+     */
+    
+    //map read
+    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->U1c, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+    
+    fprintf(file1,"SCALARS U1c float 1\n");
+    fprintf(file1,"LOOKUP_TABLE default\n");
+    
+    for(int i=0; i<msh->nv_tot; i++)
+    {
+        fprintf(file1, "%e\n", ptr[i]);
+    }
+
+    //unmap read
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->U1c, ptr, 0, NULL, NULL);
+    
+    
+    /*
+     ===================
+     rhs c
+     ===================
+     */
+    
+    //map read
+    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->F1c, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+    
+    fprintf(file1,"SCALARS F1c float 1\n");
+    fprintf(file1,"LOOKUP_TABLE default\n");
+    
+    for(int i=0; i<msh->nv_tot; i++)
+    {
+        fprintf(file1, "%e\n", ptr[i]);
+    }
+
+    //unmap read
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->F1c, ptr, 0, NULL, NULL);
+    
+    
+//    /*
+//     ===================
+//     field
+//     ===================
+//     */
+//
+//    //map read
+//    ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->F1u, CL_TRUE, CL_MAP_READ, 0, msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+//
+//    fprintf(file1,"FIELD FieldData2 1\n");
+//    fprintf(file1,"pf2 3 %zu float\n", msh->nv_tot);
+//
+//    for(int i=0; i<msh->nv_tot; i++)
+//    {
+//        int row = 3*i;
+//        fprintf(file1, "%e %e %e\n", ptr[row], ptr[row+1], ptr[row+2]);
+//    }
+//
+//    //unmap read
+//    clEnqueueUnmapMemObject(ocl->command_queue, ocl->F1u, ptr, 0, NULL, NULL);
 
     fclose(file1);
 

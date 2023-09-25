@@ -60,8 +60,7 @@ int main(int argc, const char * argv[])
     wrt_raw(&ocl, ocl.U1c, msh.nv_tot, sizeof(float), "U1c");
     wrt_raw(&ocl, ocl.F1c, msh.nv_tot, sizeof(float), "F1c");
 
-    
-//    wrt_vtk(&msh, &ocl);
+    wrt_vtk(&msh, &ocl);
     
     //clean
     ocl_final(&ocl);
