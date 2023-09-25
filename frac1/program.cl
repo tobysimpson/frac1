@@ -484,7 +484,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
 
 
 //boundary conditions
-kernel void vtx_bnd1(ulong3 vtx_dim,
+kernel void fac_bnd1(ulong3 vtx_dim,
                      global float  *U0u,
                      global float  *U0c,
                      global float  *U1u,

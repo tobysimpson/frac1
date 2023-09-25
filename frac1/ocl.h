@@ -58,7 +58,7 @@ struct ocl_obj
     //kernels
     cl_kernel           vtx_init;
     cl_kernel           vtx_assm;
-    cl_kernel           vtx_bnd1;
+    cl_kernel           fac_bnd1;
 };
 
 
@@ -153,7 +153,7 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
 
     ocl->vtx_init = clCreateKernel(ocl->program, "vtx_init", &ocl->err);
     ocl->vtx_assm = clCreateKernel(ocl->program, "vtx_assm", &ocl->err);
-    ocl->vtx_bnd1 = clCreateKernel(ocl->program, "vtx_bnd1", &ocl->err);
+    ocl->fac_bnd1 = clCreateKernel(ocl->program, "fac_bnd1", &ocl->err);
     
     /*
      =============================
@@ -240,25 +240,25 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
     ocl->err = clSetKernelArg(ocl->vtx_assm, 17, sizeof(cl_mem), (void*)&ocl->Jcc_jj);
     ocl->err = clSetKernelArg(ocl->vtx_assm, 18, sizeof(cl_mem), (void*)&ocl->Jcc_vv);
     
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1,  0, sizeof(cl_ulong3), (void*)&msh->vtx_dim);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1,  1, sizeof(cl_mem), (void*)&ocl->U0u);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1,  2, sizeof(cl_mem), (void*)&ocl->U0c);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1,  3, sizeof(cl_mem), (void*)&ocl->U1u);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1,  4, sizeof(cl_mem), (void*)&ocl->U1c);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1,  5, sizeof(cl_mem), (void*)&ocl->F1u);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1,  6, sizeof(cl_mem), (void*)&ocl->F1c);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1,  7, sizeof(cl_mem), (void*)&ocl->Juu_ii);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1,  8, sizeof(cl_mem), (void*)&ocl->Juu_jj);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1,  9, sizeof(cl_mem), (void*)&ocl->Juu_vv);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1, 10, sizeof(cl_mem), (void*)&ocl->Juc_ii);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1, 11, sizeof(cl_mem), (void*)&ocl->Juc_jj);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1, 12, sizeof(cl_mem), (void*)&ocl->Juc_vv);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1, 13, sizeof(cl_mem), (void*)&ocl->Jcu_ii);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1, 14, sizeof(cl_mem), (void*)&ocl->Jcu_jj);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1, 15, sizeof(cl_mem), (void*)&ocl->Jcu_vv);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1, 16, sizeof(cl_mem), (void*)&ocl->Jcc_ii);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1, 17, sizeof(cl_mem), (void*)&ocl->Jcc_jj);
-    ocl->err = clSetKernelArg(ocl->vtx_bnd1, 18, sizeof(cl_mem), (void*)&ocl->Jcc_vv);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1,  0, sizeof(cl_ulong3), (void*)&msh->vtx_dim);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1,  1, sizeof(cl_mem), (void*)&ocl->U0u);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1,  2, sizeof(cl_mem), (void*)&ocl->U0c);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1,  3, sizeof(cl_mem), (void*)&ocl->U1u);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1,  4, sizeof(cl_mem), (void*)&ocl->U1c);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1,  5, sizeof(cl_mem), (void*)&ocl->F1u);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1,  6, sizeof(cl_mem), (void*)&ocl->F1c);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1,  7, sizeof(cl_mem), (void*)&ocl->Juu_ii);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1,  8, sizeof(cl_mem), (void*)&ocl->Juu_jj);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1,  9, sizeof(cl_mem), (void*)&ocl->Juu_vv);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1, 10, sizeof(cl_mem), (void*)&ocl->Juc_ii);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1, 11, sizeof(cl_mem), (void*)&ocl->Juc_jj);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1, 12, sizeof(cl_mem), (void*)&ocl->Juc_vv);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1, 13, sizeof(cl_mem), (void*)&ocl->Jcu_ii);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1, 14, sizeof(cl_mem), (void*)&ocl->Jcu_jj);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1, 15, sizeof(cl_mem), (void*)&ocl->Jcu_vv);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1, 16, sizeof(cl_mem), (void*)&ocl->Jcc_ii);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1, 17, sizeof(cl_mem), (void*)&ocl->Jcc_jj);
+    ocl->err = clSetKernelArg(ocl->fac_bnd1, 18, sizeof(cl_mem), (void*)&ocl->Jcc_vv);
     
 }
 
