@@ -24,7 +24,7 @@ void dsp_vec(DenseVector_Float v)
 //solve
 int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
 {
-    printf("slv %zu\n", msh->nv[0]);
+    printf("slv %d\n", msh->nv[0]);
     
     /*
      ========================
@@ -33,23 +33,36 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     SparseAttributes_t atts;
-    atts.kind     = SparseOrdinary;        // SparseOrdinary/SparseSymmetric
+    atts.kind       = SparseOrdinary;        // SparseOrdinary/SparseSymmetric
+    atts.transpose  = false;
 //    atts.triangle = SparseUpperTriangle;
     
-    int     A_ii[]  = { 0,   1,   2,    3,    0,   1,   0,   2};
-    int     A_jj[]  = { 0,   1,   2,    3,    1,   0,   2,   0};
-    float   A_vv[]  = { 1,   1,   1,    1,    1,   1,   1,   1};
+//    int     A_ii[]  = { 0,   1,   2,    3,    0,   1,   0,   2};
+//    int     A_jj[]  = { 0,   1,   2,    3,    1,   0,   2,   0};
+//    float   A_vv[]  = { 1,   1,   1,    1,    1,   1,   1,   1};
     
     //size of input arrays
-    long            blk_num = 8;
+    long            blk_num = 27*9*msh->nv_tot;
     unsigned char   blk_sz  = 1;
     
-    int A_row_num = 4;
-    int A_col_num = 4;
+    int num_rows = 3*msh->nv_tot;
+    int num_cols = 3*msh->nv_tot;
+
+    //map read
+    int*    ii = clEnqueueMapBuffer(ocl->command_queue, ocl->Juu_ii, CL_TRUE, CL_MAP_READ, 0, blk_num*sizeof(int),   0, NULL, NULL, &ocl->err);
+    int*    jj = clEnqueueMapBuffer(ocl->command_queue, ocl->Juu_jj, CL_TRUE, CL_MAP_READ, 0, blk_num*sizeof(int),   0, NULL, NULL, &ocl->err);
+    float*  vv = clEnqueueMapBuffer(ocl->command_queue, ocl->Juu_vv, CL_TRUE, CL_MAP_READ, 0, blk_num*sizeof(float), 0, NULL, NULL, &ocl->err);
+
+    //create
+    SparseMatrix_Float A = SparseConvertFromCoordinate(num_rows, num_cols, blk_num, blk_sz, atts, ii, jj, vv);  //duplicates sum
     
-    SparseMatrix_Float A = SparseConvertFromCoordinate(A_row_num, A_col_num, blk_num, blk_sz, atts, A_ii, A_jj, A_vv);  //duplicates sum
+    //unmap read
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->Juu_ii, ii, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->Juu_jj, jj, 0, NULL, NULL);
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->Juu_vv, vv, 0, NULL, NULL);
     
-    printf("nnz=%lu\n", A.structure.columnStarts[A.structure.columnCount]);      //this is key nnz = the length of the data and row_idx arrays
+    //debug
+    printf("nnz=%lu\n", A.structure.columnStarts[A.structure.columnCount]);
     
     /*
      ========================
@@ -57,7 +70,7 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
      ========================
      */
     
-    printf("csc\n");
+    printf("disp\n");
 
     int col_idx = 0;
 

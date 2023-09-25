@@ -27,13 +27,16 @@ int main(int argc, const char * argv[])
     msh_init(&msh);
     ocl_init(&msh, &ocl);
     
-    //kernels
-    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_init, 3, NULL, msh.nv, NULL, 0, NULL, NULL);
-    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, msh.nv, NULL, 0, NULL, NULL);
-    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.fac_bnd1, 2, NULL, msh.f1, NULL, 0, NULL, NULL);
+    //cast dims
+    size_t nv[3] = {msh.nv[0],msh.nv[1],msh.nv[2]};
+    size_t f1[3] = {msh.nv[1],msh.nv[2],0}; //x=y*z
     
-    //solve
-    slv_test1(&msh, &ocl);
+    //kernels
+    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_init, 3, NULL, nv, NULL, 0, NULL, NULL);
+    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, nv, NULL, 0, NULL, NULL);
+    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.fac_bnd1, 2, NULL, f1, NULL, 0, NULL, NULL);
+    
+
     
     //write
     wrt_raw(&ocl, ocl.Juu_ii, 27*9*msh.nv_tot, sizeof(int),   "Juu_ii");
@@ -61,6 +64,9 @@ int main(int argc, const char * argv[])
     wrt_raw(&ocl, ocl.F1c, msh.nv_tot, sizeof(float), "F1c");
 
     wrt_vtk(&msh, &ocl);
+    
+    //solve
+    slv_test1(&msh, &ocl);
     
     //clean
     ocl_final(&ocl);
