@@ -440,7 +440,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
                     
                     //cc
                     int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
-                    Jcc_vv[idx_cc] += dot_e - dot_g*qw;
+                    Jcc_vv[idx_cc] += - dot_g*qw;
                     
                     //dim1
                     for(int dim1=0; dim1<3; dim1++)
