@@ -17,8 +17,8 @@ constant float dx = 5e-1f;
 
 //constant float mat_E = 0.5;   %youngs
 //constant float mat_v = 0.25;   %poisson
-constant float mat_lam = 4e-1f;
-constant float mat_mu  = 4e-1f;
+constant float mat_lam = 5e-1f;
+constant float mat_mu  = 5e-1f;
 constant float mat_g   = 1e-2f; //mm.ms^-2
 constant float mat_rho = 1e+0f; //mg.mm^-3
 
@@ -28,11 +28,11 @@ constant float mat_rho = 1e+0f; //mg.mm^-3
  ===================================
  */
 
-int     fn_idx1(ulong3 pos, ulong3 dim);
-int     fn_idx3(ulong3 pos);
+int     fn_idx1(int3 pos, int3 dim);
+int     fn_idx3(int3 pos);
 
-int     fn_bnd1(ulong3 pos, ulong3 dim);
-int     fn_bnd2(ulong3 pos, ulong3 dim);
+int     fn_bnd1(int3 pos, int3 dim);
+int     fn_bnd2(int3 pos, int3 dim);
 
 void    bas_eval(float3 p, float ee[8]);
 void    bas_grad(float3 p, float3 gg[8], float dx);
@@ -54,9 +54,9 @@ float   mec_p(float8 E);
  ===================================
  */
 
-constant ulong3 off2[8] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
+constant int3 off2[8] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
-constant ulong3 off3[27] = {
+constant int3 off3[27] = {
     {0,0,0},{1,0,0},{2,0,0},{0,1,0},{1,1,0},{2,1,0},{0,2,0},{1,2,0},{2,2,0},
     {0,0,1},{1,0,1},{2,0,1},{0,1,1},{1,1,1},{2,1,1},{0,2,1},{1,2,1},{2,2,1},
     {0,0,2},{1,0,2},{2,0,2},{0,1,2},{1,1,2},{2,1,2},{0,2,2},{1,2,2},{2,2,2}};
@@ -68,19 +68,19 @@ constant ulong3 off3[27] = {
  */
 
 //flat index
-int fn_idx1(ulong3 pos, ulong3 dim)
+int fn_idx1(int3 pos, int3 dim)
 {
     return pos.x + dim.x*(pos.y + dim.y*pos.z);
 }
 
 //index 3x3x3
-int fn_idx3(ulong3 pos)
+int fn_idx3(int3 pos)
 {
     return pos.x + 3*pos.y + 9*pos.z;
 }
 
 //in-bounds
-int fn_bnd1(ulong3 pos, ulong3 dim)
+int fn_bnd1(int3 pos, int3 dim)
 {
     return all(pos>=0)*all(pos<dim);
 }
@@ -257,8 +257,8 @@ kernel void vtx_init(global float  *vtx_xx,
                      global int    *Jcc_jj,
                      global float  *Jcc_vv)
 {
-    ulong3 vtx_dim = {get_global_size(0),get_global_size(1),get_global_size(2)};
-    ulong3 vtx1_pos1 = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
+    int3 vtx_dim = {get_global_size(0),get_global_size(1),get_global_size(2)};
+    int3 vtx1_pos1 = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
     
 //    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
     
@@ -290,7 +290,7 @@ kernel void vtx_init(global float  *vtx_xx,
     //vtx2
     for(int vtx2_idx3=0; vtx2_idx3<27; vtx2_idx3++)
     {
-        ulong3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
+        int3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
         int  vtx2_idx1 = fn_idx1(vtx2_pos1, vtx_dim);
         int  vtx2_bnd1 = fn_bnd1(vtx2_pos1, vtx_dim);
 
@@ -357,9 +357,9 @@ kernel void vtx_assm(global float3 *vtx_xx,
                      global int    *Jcc_jj,
                      global float  *Jcc_vv)
 {
-    ulong3 vtx_dim    = {get_global_size(0),get_global_size(1),get_global_size(2)};
-    ulong3 vtx1_pos1  = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
-    ulong3 ele_dim    = vtx_dim - 1;
+    int3 vtx_dim    = {get_global_size(0),get_global_size(1),get_global_size(2)};
+    int3 vtx1_pos1  = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
+    int3 ele_dim    = vtx_dim - 1;
     
 //    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
     
@@ -373,8 +373,8 @@ kernel void vtx_assm(global float3 *vtx_xx,
     //ele1
     for(uint ele1_idx2=0; ele1_idx2<8; ele1_idx2++)
     {
-        ulong3 ele1_pos2 = off2[ele1_idx2];
-        ulong3 ele1_pos1 = vtx1_pos1 + ele1_pos2 - 1;
+        int3 ele1_pos2 = off2[ele1_idx2];
+        int3 ele1_pos1 = vtx1_pos1 + ele1_pos2 - 1;
         int  ele1_bnd1 = fn_bnd1(ele1_pos1, ele_dim);
         
         //ref vtx (decrement)
@@ -429,7 +429,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
                 //vtx2
                 for(int vtx2_idx2=0; vtx2_idx2<8; vtx2_idx2++)
                 {
-                    ulong3 vtx2_pos3 = ele1_pos2 + off2[vtx2_idx2];
+                    int3 vtx2_pos3 = ele1_pos2 + off2[vtx2_idx2];
                     int  vtx2_idx3 = fn_idx3(vtx2_pos3);
                     
 //                    printf("vtx2 %v3d %d\n", vtx2_pos3, vtx2_idx3);
@@ -498,7 +498,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
 
 
 //boundary conditions
-kernel void fac_bnd1(ulong3 vtx_dim,
+kernel void fac_bnd1(int3 vtx_dim,
                      global float  *F1u,
                      global float  *F1c,
                      global float  *Juu_vv,
@@ -506,7 +506,7 @@ kernel void fac_bnd1(ulong3 vtx_dim,
                      global float  *Jcu_vv,
                      global float  *Jcc_vv)
 {
-    ulong3 vtx1_pos1  = {0, get_global_id(0), get_global_id(1)}; //x=0
+    int3 vtx1_pos1  = {0, get_global_id(0), get_global_id(1)}; //x=0
     
     //    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
     //    printf("vtx_dim %v3d\n", vtx_dim);
@@ -529,7 +529,7 @@ kernel void fac_bnd1(ulong3 vtx_dim,
     //vtx2
     for(int vtx2_idx3=0; vtx2_idx3<27; vtx2_idx3++)
     {
-        ulong3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
+        int3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
         int  vtx2_idx1 = fn_idx1(vtx2_pos1, vtx_dim);
 
 //        printf("vtx2_pos1 %+v3d %d\n", vtx2_pos1, vtx2_bnd1);
