@@ -13,7 +13,7 @@
  ===================================
  */
 
-constant float dx = 1e0f;
+constant float dx = 5e-1f;
 
 //constant float mat_E = 0.5;   %youngs
 //constant float mat_v = 0.25;   %poisson
@@ -364,6 +364,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
 //    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
     
     int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
+    int vtx1_idx2 = 8;
 //    printf("vtx1 %3d\n", vtx1_idx1);
     
     //volume
@@ -375,7 +376,9 @@ kernel void vtx_assm(global float3 *vtx_xx,
         ulong3 ele1_pos2 = off2[ele1_idx2];
         ulong3 ele1_pos1 = vtx1_pos1 + ele1_pos2 - 1;
         int  ele1_bnd1 = fn_bnd1(ele1_pos1, ele_dim);
-        int  vtx1_idx2 = 7 - ele1_idx2;
+        
+        //ref vtx (decrement)
+        vtx1_idx2 -= 1;
         
         //in-bounds
         if(ele1_bnd1)
@@ -384,15 +387,15 @@ kernel void vtx_assm(global float3 *vtx_xx,
 //            printf("ele1 %d %+v3d %d %d\n", ele1_idx2, ele1_pos1, ele1_bnd1, vtx1_idx2);
             
             //qpt1 (change limit with scheme 1,8,27)
-            for(int qpt1=0; qpt1<1; qpt1++)
+            for(int qpt1=0; qpt1<8; qpt1++)
             {
-                //1pt
-                float3 qp = (float3){qp1,qp1,qp1};
-                float  qw = qw1*qw1*qw1*vlm;
+//                //1pt
+//                float3 qp = (float3){qp1,qp1,qp1};
+//                float  qw = qw1*qw1*qw1*vlm;
                 
-//                //2pt
-//                float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
-//                float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z]*vlm;
+                //2pt
+                float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
+                float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z]*vlm;
                 
 //                //3pt
 //                float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
@@ -410,9 +413,9 @@ kernel void vtx_assm(global float3 *vtx_xx,
                 
                 //rhs c
                 int idx_c = vtx1_idx1;
-                F1c[idx_c] += 0e0f;
+                F1c[idx_c] += bas_ee[vtx1_idx2]*qw;
                 
-                //rhs
+                //rhs u
                 for(int dim1=0; dim1<3; dim1++)
                 {
                     //gravity
@@ -437,7 +440,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
                     
                     //cc
                     int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
-                    Jcc_vv[idx_cc] += dot_e + dot_g*qw;
+                    Jcc_vv[idx_cc] += dot_e - dot_g*qw;
                     
                     //dim1
                     for(int dim1=0; dim1<3; dim1++)
@@ -513,7 +516,7 @@ kernel void fac_bnd1(ulong3 vtx_dim,
     
     //rhs c
     int idx_c = vtx1_idx1;
-    F1c[idx_c] += 0e0f;
+    F1c[idx_c] += 1e0f;
     
     //rhs u
     for(int dim1=0; dim1<3; dim1++)
@@ -556,7 +559,9 @@ kernel void fac_bnd1(ulong3 vtx_dim,
                 Juu_vv[idx_uu] = (vtx1_idx1==vtx2_idx1)*(dim1==dim2);
                 
             } //dim2
+            
         } //dim1
+        
     } //vtx2
 
     return;
