@@ -108,7 +108,7 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
     for(int i=0; i<msh->nv_tot; i++)
     {
         int row = 3*i;
-        fprintf(file1, "%e %e %e\n", ocl->ff[row], ocl->ff[row+1], ocl->ff[row+2]);
+        fprintf(file1, "%e %e %e\n", ocl->fu[row], ocl->fu[row+1], ocl->fu[row+2]);
     }
 
     

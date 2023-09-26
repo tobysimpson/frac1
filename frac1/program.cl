@@ -13,7 +13,7 @@
  ===================================
  */
 
-constant float dx       = 1e0f;
+constant float dx = 1e0f;
 
 //constant float mat_E = 0.5;   %youngs
 //constant float mat_v = 0.25;   %poisson
@@ -40,7 +40,8 @@ void    bas_grad(float3 p, float3 gg[8], float dx);
 float   sym_tr(float8 A);
 float   sym_det(float8 A);
 float8  sym_vout(float3 v);
-float8  sym_prod(float8 A, float8 B);
+float3  sym_vmul(float8 A, float3 v);
+float8  sym_mmul(float8 A, float8 B);
 float   sym_tip(float8 A, float8 B);
 
 float8  mec_E(float3 g[3]);
@@ -178,8 +179,15 @@ float8 sym_vout(float3 v)
     return (float8){v.x*v.x, v.x*v.y, v.x*v.z, v.y*v.y, v.y*v.z, v.z*v.z, 0e0f, 0e0f};
 }
 
-//sym prod
-float8 sym_prod(float8 A, float8 B)
+//sym Av
+float3 sym_vmul(float8 A, float3 v)
+{
+    return (float3){dot(A.s012,v), dot(A.s134,v), dot(A.s245,v)};
+}
+
+
+//sym AB
+float8 sym_mmul(float8 A, float8 B)
 {
     return (float8){A.s0*B.s0 + A.s1*B.s1 + A.s2*B.s2,
                     A.s0*B.s1 + A.s1*B.s3 + A.s2*B.s4,
@@ -219,7 +227,7 @@ float8 mec_S(float8 E)
 //energy phi = 0.5*lam*(tr(E))^2 + mu*tr(E^2)
 float mec_p(float8 E)
 {
-    return 5e-1f*mat_lam*pown(sym_tr(E),2) + mat_mu*sym_tr(sym_prod(E,E));
+    return 5e-1f*mat_lam*pown(sym_tr(E),2) + mat_mu*sym_tr(sym_mmul(E,E));
 }
 
 /*
@@ -408,11 +416,11 @@ kernel void vtx_assm(global float3 *vtx_xx,
                 for(int dim1=0; dim1<3; dim1++)
                 {
                     //gravity
-                    float3 b = (float3){0e0f, 0e0f, mat_g}*mat_rho;
+                    float b[3] = {0e0f, 0e0f, -mat_g*mat_rho};
                     
                     //write
                     int idx_u = 3*vtx1_idx1 + dim1;
-                    F1u[idx_u] += dot(bas_gg[vtx1_idx2],b)*qw;
+                    F1u[idx_u] += bas_ee[vtx1_idx2]*b[dim1]*qw;
                 }
                 
                 //vtx2

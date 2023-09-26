@@ -28,7 +28,9 @@ struct ocl_obj
         
     //host memory
     float*  uu;
-    float*  ff;
+    float*  fu;
+    float*  uc;
+    float*  fc;
     
     //device memory
     cl_mem              vtx_dim;
@@ -167,7 +169,9 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
     
     //host memory
     ocl->uu = malloc(3*msh->nv_tot*sizeof(float));
-    ocl->ff = malloc(3*msh->nv_tot*sizeof(float));
+    ocl->fu = malloc(3*msh->nv_tot*sizeof(float));
+    ocl->uc = malloc(msh->nv_tot*sizeof(float));
+    ocl->fc = malloc(msh->nv_tot*sizeof(float));
     
     //CL_MEM_HOST_READ_ONLY/CL_MEM_HOST_NO_ACCESS
 
@@ -296,7 +300,9 @@ void ocl_final(struct ocl_obj *ocl)
     
     //host
     free(ocl->uu);
-    free(ocl->ff);
+    free(ocl->fu);
+    free(ocl->uc);
+    free(ocl->fc);
     
     return;
 }

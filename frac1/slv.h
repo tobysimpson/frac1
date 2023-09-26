@@ -86,7 +86,7 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
     
     //read
     memset(ocl->uu, 0e0f, 3*msh->nv_tot);
-    ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->F1u, CL_TRUE, 0, 3*msh->nv_tot*sizeof(float), ocl->ff, 0, NULL, NULL);
+    ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->F1u, CL_TRUE, 0, 3*msh->nv_tot*sizeof(float), ocl->fu, 0, NULL, NULL);
     
     
     //create
@@ -97,7 +97,7 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
     f.count = 3*msh->nv_tot;
     
     u.data = ocl->uu;
-    f.data = ocl->ff;
+    f.data = ocl->fu;
 
     
 //    dsp_vec(u);
@@ -113,12 +113,12 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
     //iterate
 //    SparseSolve(SparseConjugateGradient(), A, f, u);    //yes SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
 //    SparseSolve(SparseGMRES(), A, f, u);              //yes
-//    SparseSolve(SparseLSMR(), A, f, u);               //yes
+    SparseSolve(SparseLSMR(), A, f, u);               //yes
     
     //QR
-    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //no
-    SparseSolve(QR, f , u);
-    SparseCleanup(QR);
+//    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //no
+//    SparseSolve(QR, f , u);
+//    SparseCleanup(QR);
     
 
 //    dsp_vec(u);
