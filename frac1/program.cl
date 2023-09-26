@@ -410,7 +410,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
                 
                 //rhs c
                 int idx_c = vtx1_idx1;
-                F1c[idx_c] += 1e0f;
+                F1c[idx_c] += 0e0f;
                 
                 //rhs
                 for(int dim1=0; dim1<3; dim1++)

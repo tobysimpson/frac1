@@ -36,10 +36,7 @@ int main(int argc, const char * argv[])
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, nv, NULL, 0, NULL, NULL);
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.fac_bnd1, 2, NULL, f1, NULL, 0, NULL, NULL);
     
-    //solve
-    slv_test1(&msh, &ocl);
-    
-    //debug mtx
+    //mtx for matlab
     wrt_raw(&ocl, ocl.Juu_ii, 27*9*msh.nv_tot, sizeof(int),   "Juu_ii");
     wrt_raw(&ocl, ocl.Juu_jj, 27*9*msh.nv_tot, sizeof(int),   "Juu_jj");
     wrt_raw(&ocl, ocl.Juu_vv, 27*9*msh.nv_tot, sizeof(float), "Juu_vv");
@@ -56,10 +53,21 @@ int main(int argc, const char * argv[])
     wrt_raw(&ocl, ocl.Jcc_jj, 27*msh.nv_tot, sizeof(int),   "Jcc_jj");
     wrt_raw(&ocl, ocl.Jcc_vv, 27*msh.nv_tot, sizeof(float), "Jcc_vv");
     
-
+    wrt_raw(&ocl, ocl.U0u, 3*msh.nv_tot, sizeof(float), "U0u");
+    wrt_raw(&ocl, ocl.U1u, 3*msh.nv_tot, sizeof(float), "U1u");
+    wrt_raw(&ocl, ocl.F1u, 3*msh.nv_tot, sizeof(float), "F1u");
+    
+    wrt_raw(&ocl, ocl.U0c, msh.nv_tot, sizeof(float), "U0c");
+    wrt_raw(&ocl, ocl.U1c, msh.nv_tot, sizeof(float), "U1c");
+    wrt_raw(&ocl, ocl.F1c, msh.nv_tot, sizeof(float), "F1c");
+    
+    //solve
+    slv_u(&msh, &ocl);
+    slv_c(&msh, &ocl);
+    
+    //write vtk
     wrt_vtk(&msh, &ocl);
     
-
     //clean
     ocl_final(&ocl);
     
