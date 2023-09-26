@@ -15,7 +15,7 @@ void dsp_vec(DenseVector_Float v)
     {
         printf("%+e ", v.data[i]);
     }
-    printf("\n");
+    printf("\n\n");
     
     return;
 }
@@ -33,14 +33,9 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     SparseAttributes_t atts;
-    atts.kind       = SparseOrdinary;        // SparseOrdinary/SparseSymmetric
+    atts.kind = SparseOrdinary;        // SparseOrdinary/SparseSymmetric
     atts.transpose  = false;
-//    atts.triangle = SparseUpperTriangle;
-    
-//    int     A_ii[]  = { 0,   1,   2,    3,    0,   1,   0,   2};
-//    int     A_jj[]  = { 0,   1,   2,    3,    1,   0,   2,   0};
-//    float   A_vv[]  = { 1,   1,   1,    1,    1,   1,   1,   1};
-    
+
     //size of input arrays
     long            blk_num = 27*9*msh->nv_tot;
     unsigned char   blk_sz  = 1;
@@ -70,62 +65,45 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
      ========================
      */
     
-    printf("disp\n");
-
-    int col_idx = 0;
-
-    for(int i=0; i<A.structure.columnStarts[A.structure.columnCount]; i++)
-    {
-        if(i == A.structure.columnStarts[col_idx+1])
-        {
-            col_idx += 1;
-        }
-        printf("(%d,%d) %+e\n",A.structure.rowIndices[i],col_idx,A.data[i]);
-    }
+//    printf("disp\n");
+//
+//    int col_idx = 0;
+//
+//    for(int i=0; i<A.structure.columnStarts[A.structure.columnCount]; i++)
+//    {
+//        if(i == A.structure.columnStarts[col_idx+1])
+//        {
+//            col_idx += 1;
+//        }
+//        printf("(%d,%d) %+e\n",A.structure.rowIndices[i],col_idx,A.data[i]);
+//    }
     
     /*
      ========================
      vecs
      ========================
      */
-
     
-    //map read
-    float*  uu = clEnqueueMapBuffer(ocl->command_queue, ocl->U1u, CL_TRUE, CL_MAP_READ, 0, 3*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
-    float*  ff = clEnqueueMapBuffer(ocl->command_queue, ocl->F1u, CL_TRUE, CL_MAP_READ, 0, 3*msh->nv_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
-
+    //read
+    memset(ocl->uu, 0e0f, 3*msh->nv_tot);
+    ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->F1u, CL_TRUE, 0, 3*msh->nv_tot*sizeof(float), ocl->ff, 0, NULL, NULL);
+    
+    
     //create
     DenseVector_Float u;
-    u.count = 3*msh->nv_tot;
-    u.data = uu;
-    
     DenseVector_Float f;
-    f.count = 3*msh->nv_tot;
-    f.data = ff;
     
-    //unmap read
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->U1u, uu, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->F1u, ff, 0, NULL, NULL);
+    u.count = 3*msh->nv_tot;
+    f.count = 3*msh->nv_tot;
+    
+    u.data = ocl->uu;
+    f.data = ocl->ff;
+
     
 //    dsp_vec(u);
 //    dsp_vec(f);
 
-    
-    /*
-     ========================
-     multiply
-     ========================
-     */
-//
-//    printf("Au\n");
-//    SparseMultiply(A,u,b);
-//    dsp_vec(b);
-//
-//    //reset - wont solve without reset
-//    memset(u.data, 0e0f, 4*sizeof(float));
-//    printf("u\n");
-//    dsp_vec(u);
-    
+
     /*
      ========================
      solve
@@ -133,17 +111,17 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     //iterate
-    SparseSolve(SparseConjugateGradient(), A, f, u);    //yes SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
+//    SparseSolve(SparseConjugateGradient(), A, f, u);    //yes SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
 //    SparseSolve(SparseGMRES(), A, f, u);              //yes
 //    SparseSolve(SparseLSMR(), A, f, u);               //yes
     
     //QR
-//    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //yes
-//    SparseSolve(QR, f , u);
-//    SparseCleanup(A_QR);
+    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //no
+    SparseSolve(QR, f , u);
+    SparseCleanup(QR);
     
-    printf("u\n");
-    dsp_vec(u);
+
+//    dsp_vec(u);
     
     /*
      ========================
@@ -153,7 +131,6 @@ int slv_test1(struct msh_obj *msh, struct ocl_obj *ocl)
     
     SparseCleanup(A);
 
-    
     return 0;
 }
 

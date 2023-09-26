@@ -26,6 +26,10 @@ struct ocl_obj
     cl_program          program;
     char                device_str[100];
         
+    //host memory
+    float*  uu;
+    float*  ff;
+    
     //device memory
     cl_mem              vtx_dim;
     cl_mem              vtx_xx;
@@ -161,6 +165,10 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
      =============================
      */
     
+    //host memory
+    ocl->uu = malloc(3*msh->nv_tot*sizeof(float));
+    ocl->ff = malloc(3*msh->nv_tot*sizeof(float));
+    
     //CL_MEM_HOST_READ_ONLY/CL_MEM_HOST_NO_ACCESS
 
     //constants
@@ -285,6 +293,10 @@ void ocl_final(struct ocl_obj *ocl)
     ocl->err = clReleaseProgram(ocl->program);
     ocl->err = clReleaseCommandQueue(ocl->command_queue);
     ocl->err = clReleaseContext(ocl->context);
+    
+    //host
+    free(ocl->uu);
+    free(ocl->ff);
     
     return;
 }

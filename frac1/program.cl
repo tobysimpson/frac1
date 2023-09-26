@@ -13,7 +13,7 @@
  ===================================
  */
 
-constant float dx       = 1e-1f;
+constant float dx       = 1e0f;
 
 //constant float mat_E = 0.5;   %youngs
 //constant float mat_v = 0.25;   %poisson
@@ -408,7 +408,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
                 for(int dim1=0; dim1<3; dim1++)
                 {
                     //gravity
-                    float3 b = (float3){0e0f, 0e0f, -mat_g}*mat_rho;
+                    float3 b = (float3){0e0f, 0e0f, mat_g}*mat_rho;
                     
                     //write
                     int idx_u = 3*vtx1_idx1 + dim1;
