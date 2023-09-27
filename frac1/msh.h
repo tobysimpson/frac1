@@ -30,15 +30,19 @@ struct msh_obj
 void msh_init(struct msh_obj *msh)
 {
     //dim
-    msh->ele_dim = (cl_int3){4,4,4};
+    msh->ele_dim.x = 2;
+    msh->ele_dim.y = msh->ele_dim.x;
+    msh->ele_dim.z = msh->ele_dim.x;
+    
     msh->vtx_dim = (cl_int3){msh->ele_dim.x+1, msh->ele_dim.y+1, msh->ele_dim.z+1};
     
     printf("ele_dim %d %d %d\n", msh->ele_dim.x, msh->ele_dim.y, msh->ele_dim.z);
     printf("vtx_dim %d %d %d\n", msh->vtx_dim.x, msh->vtx_dim.y, msh->vtx_dim.z);
     
     //range
-    msh->x0 = (cl_float3){-1e0f,-1e0f,-1e0f};
+    msh->x0 = (cl_float3){-0e0f,-0e0f,-0e0f};
     msh->x1 = (cl_float3){+1e0f,+1e0f,+1e0f};
+//    msh->x1 = (cl_float3){msh->ele_dim.x, msh->ele_dim.y, msh->ele_dim.z};
     msh->dx = (cl_float3){(msh->x1.x - msh->x0.x)/(float)msh->ele_dim.x, (msh->x1.y - msh->x0.y)/(float)msh->ele_dim.y, (msh->x1.z - msh->x0.z)/(float)msh->ele_dim.z};
     
     printf("x0 %+e %+e %+e\n", msh->x0.x, msh->x0.y, msh->x0.z);

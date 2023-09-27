@@ -126,6 +126,7 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
     //fill host
     memset(ocl->uc, 0, msh->nv_tot*sizeof(float));
     ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->F1c, CL_TRUE, 0, msh->nv_tot*sizeof(float), ocl->fc, 0, NULL, NULL);
+    ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->U0c, CL_TRUE, 0, msh->nv_tot*sizeof(float), ocl->ac, 0, NULL, NULL); //ana
     
     //vecs
     DenseVector_Float u;
@@ -144,12 +145,12 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     //iterate
-//    SparseSolve(SparseConjugateGradient(), A, f, u);    //no SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
-//    SparseSolve(SparseGMRES(), A, f, u);              //no
-    SparseSolve(SparseLSMR(), A, f, u);               //yes
+//    SparseSolve(SparseConjugateGradient(), A, f, u);    //SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
+    SparseSolve(SparseGMRES(), A, f, u);
+//    SparseSolve(SparseLSMR(), A, f, u);
     
     //QR
-//    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //no
+//    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);
 //    SparseSolve(QR, f , u);
 //    SparseCleanup(QR);
     
