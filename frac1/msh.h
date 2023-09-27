@@ -25,7 +25,6 @@ struct msh_obj
     int         nv_tot;
 };
 
-
 //init
 void msh_init(struct msh_obj *msh)
 {

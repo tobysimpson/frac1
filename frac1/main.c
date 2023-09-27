@@ -28,6 +28,7 @@ int main(int argc, const char * argv[])
     ocl_init(&msh, &ocl);
     
     //cast dims
+    size_t ne[3] = {msh.ele_dim.x, msh.ele_dim.y, msh.ele_dim.z};
     size_t nv[3] = {msh.vtx_dim.x, msh.vtx_dim.y, msh.vtx_dim.z};
 //    size_t f1[2] = {msh.vtx_dim.y, msh.vtx_dim.z};
     
@@ -65,6 +66,10 @@ int main(int argc, const char * argv[])
     //solve
     slv_u(&msh, &ocl);
     slv_c(&msh, &ocl);
+    
+    //error
+    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.ele_err1, 3, NULL, ne, NULL, 0, NULL, NULL);
+    err_nrm(&msh, &ocl);
     
     //write vtk
     wrt_vtk(&msh, &ocl);

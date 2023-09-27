@@ -30,6 +30,7 @@ int     fn_bnd2(int3 pos, int3 dim);
 
 void    bas_eval(float3 p, float ee[8]);
 void    bas_grad(float3 p, float3 gg[8], float3 dx);
+float   bas_itpe(float uu2[8], float bas_ee[8]);
 
 float   sym_tr(float8 A);
 float   sym_det(float8 A);
@@ -42,8 +43,12 @@ float8  mec_E(float3 g[3]);
 float8  mec_S(float8 E, float4 mat_prm);
 float   mec_p(float8 E, float4 mat_prm);
 
-float prb_a(float3 x);
-float prb_f(float3 x);
+float   prb_a(float3 x);
+float   prb_f(float3 x);
+
+void    mem_gr3f(global float *buf, float uu3[27], int3 pos, int3 dim);
+void    mem_gr2f(global float *buf, float uu2[8], int3 pos, int3 dim);
+void    mem_lr2f(float uu3[27], float uu2[8], int3 pos);
 
 /*
  ===================================
@@ -178,6 +183,71 @@ void bas_grad(float3 p, float3 gg[8], float3 dx)
     return;
 }
 
+//interp eval
+float bas_itpe(float uu2[8], float bas_ee[8])
+{
+    float u = 0e0f;
+    
+    u += uu2[0]*bas_ee[0];
+    u += uu2[1]*bas_ee[1];
+    u += uu2[2]*bas_ee[2];
+    u += uu2[3]*bas_ee[3];
+    u += uu2[4]*bas_ee[4];
+    u += uu2[5]*bas_ee[5];
+    u += uu2[6]*bas_ee[6];
+    u += uu2[7]*bas_ee[7];
+
+    return u;
+}
+
+/*
+ ===================================
+ memory
+ ===================================
+ */
+
+//read 3x3x3 from global
+void mem_gr3f(global float *buf, float uu3[27], int3 pos, int3 dim)
+{
+    for(int i=0; i<27; i++)
+    {
+        int3 adj_pos1 = pos + off3[i] - 1;
+        int  adj_idx1 = fn_idx1(adj_pos1, dim);
+
+        //copy
+        uu3[i] = buf[adj_idx1];
+    }
+    return;
+}
+
+//read 2x2x2 from global
+void mem_gr2f(global float *buf, float uu2[8], int3 pos, int3 dim)
+{
+    for(int i=0; i<8; i++)
+    {
+        int3 adj_pos1 = pos + off2[i] - 1;
+        int  adj_idx1 = fn_idx1(adj_pos1, dim);
+
+        //copy
+        uu2[i] = buf[adj_idx1];
+    }
+    return;
+}
+
+//read 2x2x2 from 3x3x3
+void mem_lr2f(float uu3[27], float uu2[8], int3 pos)
+{
+    for(int i=0; i<8; i++)
+    {
+        int3 adj_pos3 = pos + off2[i];
+        int  adj_idx3 = fn_idx3(adj_pos3);
+
+        //copy
+        uu2[i] = uu3[adj_idx3];
+    }
+    return;
+}
+
 /*
  ===================================
  symmetric R^3x3
@@ -260,9 +330,9 @@ float mec_p(float8 E, float4 mat_prm)
  */
 
 //init
-kernel void vtx_init(int3   vtx_dim,
-                     float3 x0,
-                     float3 dx,
+kernel void vtx_init(const int3   vtx_dim,
+                     const float3 x0,
+                     const float3 dx,
                      global float  *vtx_xx,
                      global float  *U0u,
                      global float  *U0c,
@@ -361,10 +431,10 @@ kernel void vtx_init(int3   vtx_dim,
 
 
 //assemble
-kernel void vtx_assm(int3   ele_dim,
-                     int3   vtx_dim,
-                     float3 dx,
-                     float4 mat_prm,
+kernel void vtx_assm(const int3   ele_dim,
+                     const int3   vtx_dim,
+                     const float3 dx,
+                     const float4 mat_prm,
                      global float3 *vtx_xx,
                      global float  *U0u,
                      global float  *U0c,
@@ -529,9 +599,9 @@ kernel void vtx_assm(int3   ele_dim,
 
 
 //boundary conditions
-kernel void fac_bnd1(int3   vtx_dim,
-                     float3 x0,
-                     float3 dx,
+kernel void fac_bnd1(const int3   vtx_dim,
+                     const float3 x0,
+                     const float3 dx,
                      global float  *F1u,
                      global float  *F1c,
                      global float  *Juu_vv,
@@ -541,7 +611,6 @@ kernel void fac_bnd1(int3   vtx_dim,
 {
     int3 vtx1_pos1  = {0, get_global_id(0), get_global_id(1)}; //x=0
     int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
-    
 
     float3 x = x0 + dx*convert_float3(vtx1_pos1);
     
@@ -601,9 +670,9 @@ kernel void fac_bnd1(int3   vtx_dim,
 
 
 //boundary conditions
-kernel void vtx_bnd1(int3   vtx_dim,
-                     float3 x0,
-                     float3 dx,
+kernel void vtx_bnd1(const int3   vtx_dim,
+                     const float3 x0,
+                     const float3 dx,
                      global float  *F1u,
                      global float  *F1c,
                      global float  *Juu_vv,
@@ -674,6 +743,64 @@ kernel void vtx_bnd1(int3   vtx_dim,
         } //vtx2
         
     }//bnd2
+
+    return;
+}
+
+
+//error norm
+kernel void ele_err1(const int3     ele_dim,
+                     const float3   x0,
+                     const float3   dx,
+                     global float   *U1c,
+                     global float   *ele_ee)
+{
+    int3 ele_pos  = {get_global_id(0), get_global_id(1), get_global_id(2)};
+    int ele_idx = fn_idx1(ele_pos, ele_dim);
+    
+    //    printf("ele_pos %v3d\n", ele_pos);
+    
+    float e_sum = 0e0f;
+    float vlm = dx.x*dx.y*dx.z;
+    
+    //read
+    float uc2[8];
+    mem_gr2f(U1c, uc2, ele_pos, ele_dim);
+    
+    //qpt1 (change limit with scheme 1,8,27)
+    for(int qpt1=0; qpt1<8; qpt1++)
+    {
+//        //1pt
+//        float3 qp = (float3){qp1,qp1,qp1};
+//        float  qw = qw1*qw1*qw1*vlm;
+
+        //2pt
+        float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
+        float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z]*vlm;
+
+//        //3pt
+//        float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
+//        float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
+
+        //qp global
+        float3 qp_glb = dx*(convert_float3(ele_pos) + qp);
+//        printf("  qp_glb %v3f\n", qp_glb);
+
+        //basis
+        float  bas_ee[8];
+        bas_eval(qp, bas_ee);
+
+        //ana,num
+        float a = prb_a(qp_glb);
+        float c = bas_itpe(uc2, bas_ee);
+        
+        //sum
+        e_sum += pown((c - a), 2)*qw;
+        
+    } //qpt1
+    
+    //write
+    ele_ee[ele_idx] = e_sum;
 
     return;
 }

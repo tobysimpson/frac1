@@ -83,6 +83,8 @@ int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
 //    SparseSolve(QR, f , u);
 //    SparseCleanup(QR);
     
+    //write to device
+    ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->U1u, CL_TRUE, 0, 3*msh->nv_tot*sizeof(float), ocl->uu, 0, NULL, NULL);
 
     //clean
     SparseCleanup(A);
@@ -123,7 +125,7 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
     //debug
     printf("nnz=%lu\n", A.structure.columnStarts[A.structure.columnCount]);
     
-    //fill host
+    //read from device/reset
     memset(ocl->uc, 0, msh->nv_tot*sizeof(float));
     ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->F1c, CL_TRUE, 0, msh->nv_tot*sizeof(float), ocl->fc, 0, NULL, NULL);
     ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->U0c, CL_TRUE, 0, msh->nv_tot*sizeof(float), ocl->ac, 0, NULL, NULL); //ana
@@ -155,6 +157,9 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
     SparseCleanup(QR);
     
 
+    //write to device
+    ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->U1c, CL_TRUE, 0,   msh->nv_tot*sizeof(float), ocl->uc, 0, NULL, NULL);
+
     //clean
     SparseCleanup(A);
 
@@ -162,4 +167,31 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
 }
 
 
+void err_nrm(struct msh_obj *msh, struct ocl_obj *ocl)
+{
+    //map read
+    float *ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->ele_ee, CL_TRUE, CL_MAP_READ, 0, msh->ne_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
+    
+    float e_sum = 0e0f;
+    
+    //sum
+    for(int i=0; i<msh->ne_tot; i++)
+    {
+        e_sum += ptr[i];
+        
+//        printf("%03d %e %e\n", i, ptr[i], e_sum);
+    }
+    printf("\n");
+
+    //unmap read
+    clEnqueueUnmapMemObject(ocl->command_queue, ocl->ele_ee, ptr, 0, NULL, NULL);
+    
+    //disp
+    printf("%03d %e %e\n", msh->ele_dim.x, msh->dx.x, sqrtf(e_sum));
+    
+    return;
+}
+
+
 #endif /* slv_h */
+
