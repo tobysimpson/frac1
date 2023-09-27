@@ -435,7 +435,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
 //                    printf("vtx2 %v3d %d\n", vtx2_pos3, vtx2_idx3);
                     
                     //dots
-                    float dot_e = bas_ee[vtx1_idx2]*bas_ee[vtx2_idx2];
+//                    float dot_e = bas_ee[vtx1_idx2]*bas_ee[vtx2_idx2];
                     float dot_g = dot(bas_gg[vtx1_idx2],bas_gg[vtx2_idx2]);
                     
                     //cc
@@ -498,71 +498,74 @@ kernel void vtx_assm(global float3 *vtx_xx,
 
 
 //boundary conditions
-kernel void fac_bnd1(int3 vtx_dim,
-                     global float  *F1u,
-                     global float  *F1c,
-                     global float  *Juu_vv,
-                     global float  *Juc_vv,
-                     global float  *Jcu_vv,
-                     global float  *Jcc_vv)
+kernel void fac_bnd1(int3   vtx_dim,
+                     float4 mat_prm)
+//                     global float  *F1u,
+//                     global float  *F1c,
+//                     global float  *Juu_vv,
+//                     global float  *Juc_vv,
+//                     global float  *Jcu_vv,
+//                     global float  *Jcc_vv)
 {
     int3 vtx1_pos1  = {0, get_global_id(0), get_global_id(1)}; //x=0
     
-    //    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
-    //    printf("vtx_dim %v3d\n", vtx_dim);
+    printf("vtx_dim %v3d\n", vtx_dim);
+    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
     
-    int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
+    printf("mat_prm %v4f\n", mat_prm);
+    
+//    int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
 //    printf("vtx1 %3d\n", vtx1_idx1);
-    
-    //rhs c
-    int idx_c = vtx1_idx1;
-    F1c[idx_c] += 1e0f;
-    
-    //rhs u
-    for(int dim1=0; dim1<3; dim1++)
-    {
-        //u
-        int idx_u = 3*vtx1_idx1 + dim1;
-        F1u[idx_u] = 0e0f;
-    }
-    
-    //vtx2
-    for(int vtx2_idx3=0; vtx2_idx3<27; vtx2_idx3++)
-    {
-        int3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
-        int  vtx2_idx1 = fn_idx1(vtx2_pos1, vtx_dim);
-
-//        printf("vtx2_pos1 %+v3d %d\n", vtx2_pos1, vtx2_bnd1);
-
-        //cc
-        int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
-        Jcc_vv[idx_cc] = (vtx1_idx1==vtx2_idx1);
-        
-        //dim1
-        for(int dim1=0; dim1<3; dim1++)
-        {
-            //they are transposes => redundancy if needed
-            
-            //uc
-            int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-            Juc_vv[idx_uc] = 0e0f;
-            
-            //cu
-            int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-            Jcu_vv[idx_cu] = 0e0f;
-            
-            //dim2
-            for(int dim2=0; dim2<3; dim2++)
-            {
-                //cc
-                int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
-                Juu_vv[idx_uu] = (vtx1_idx1==vtx2_idx1)*(dim1==dim2);
-                
-            } //dim2
-            
-        } //dim1
-        
-    } //vtx2
+//
+//    //rhs c
+//    int idx_c = vtx1_idx1;
+//    F1c[idx_c] += 1e0f;
+//
+//    //rhs u
+//    for(int dim1=0; dim1<3; dim1++)
+//    {
+//        //u
+//        int idx_u = 3*vtx1_idx1 + dim1;
+//        F1u[idx_u] = 0e0f;
+//    }
+//
+//    //vtx2
+//    for(int vtx2_idx3=0; vtx2_idx3<27; vtx2_idx3++)
+//    {
+//        int3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
+//        int  vtx2_idx1 = fn_idx1(vtx2_pos1, vtx_dim);
+//
+////        printf("vtx2_pos1 %+v3d %d\n", vtx2_pos1, vtx2_bnd1);
+//
+//        //cc
+//        int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
+//        Jcc_vv[idx_cc] = (vtx1_idx1==vtx2_idx1);
+//
+//        //dim1
+//        for(int dim1=0; dim1<3; dim1++)
+//        {
+//            //they are transposes => redundancy if needed
+//
+//            //uc
+//            int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+//            Juc_vv[idx_uc] = 0e0f;
+//
+//            //cu
+//            int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+//            Jcu_vv[idx_cu] = 0e0f;
+//
+//            //dim2
+//            for(int dim2=0; dim2<3; dim2++)
+//            {
+//                //cc
+//                int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
+//                Juu_vv[idx_uu] = (vtx1_idx1==vtx2_idx1)*(dim1==dim2);
+//
+//            } //dim2
+//
+//        } //dim1
+//
+//    } //vtx2
 
     return;
 }
