@@ -28,8 +28,8 @@ int main(int argc, const char * argv[])
     ocl_init(&msh, &ocl);
     
     //cast dims
-    size_t nv[3] = {msh.nv[0],msh.nv[1],msh.nv[2]};
-    size_t f1[2] = {msh.nv[1],msh.nv[2]}; //x=y*z
+    size_t nv[3] = {msh.vtx_dim.x, msh.vtx_dim.y, msh.vtx_dim.z};
+    size_t f1[2] = {msh.vtx_dim.y, msh.vtx_dim.z};
     
     //kernels
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_init, 3, NULL, nv, NULL, 0, NULL, NULL);

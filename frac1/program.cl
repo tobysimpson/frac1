@@ -15,10 +15,10 @@
 
 constant float dx = 5e-1f;
 
-//constant float mat_E = 0.5;   %youngs
-//constant float mat_v = 0.25;   %poisson
-constant float mat_lam = 5e-1f;
-constant float mat_mu  = 5e-1f;
+////constant float mat_E = 0.5;   %youngs
+////constant float mat_v = 0.25;   %poisson
+//constant float mat_lam = 5e-1f;
+//constant float mat_mu  = 5e-1f;
 constant float mat_g   = 1e-2f; //mm.ms^-2
 constant float mat_rho = 1e+0f; //mg.mm^-3
 
@@ -35,7 +35,7 @@ int     fn_bnd1(int3 pos, int3 dim);
 int     fn_bnd2(int3 pos, int3 dim);
 
 void    bas_eval(float3 p, float ee[8]);
-void    bas_grad(float3 p, float3 gg[8], float dx);
+void    bas_grad(float3 p, float3 gg[8], float3 dx);
 
 float   sym_tr(float8 A);
 float   sym_det(float8 A);
@@ -45,8 +45,8 @@ float8  sym_mmul(float8 A, float8 B);
 float   sym_tip(float8 A, float8 B);
 
 float8  mec_E(float3 g[3]);
-float8  mec_S(float8 E);
-float   mec_p(float8 E);
+float8 mec_S(float8 E, float4 mat_prm);
+float mec_p(float8 E, float4 mat_prm);
 
 /*
  ===================================
@@ -133,7 +133,7 @@ void bas_eval(float3 p, float ee[8])
 }
 
 //grad
-void bas_grad(float3 p, float3 gg[8], float dx)
+void bas_grad(float3 p, float3 gg[8], float3 dx)
 {
     float x0 = 1e0f - p.x;
     float y0 = 1e0f - p.y;
@@ -216,18 +216,18 @@ float8 mec_E(float3 g[3])
 }
 
 //stress pk2 = lam*tr(e)*I + 2*mu*e
-float8 mec_S(float8 E)
+float8 mec_S(float8 E, float4 mat_prm)
 {
-    float8 S = 2e0f*mat_mu*E;
-    S.s035 += mat_lam*sym_tr(E);
+    float8 S = 2e0f*mat_prm.w*E;
+    S.s035 += mat_prm.z*sym_tr(E);
     
     return S;
 }
 
 //energy phi = 0.5*lam*(tr(E))^2 + mu*tr(E^2)
-float mec_p(float8 E)
+float mec_p(float8 E, float4 mat_prm)
 {
-    return 5e-1f*mat_lam*pown(sym_tr(E),2) + mat_mu*sym_tr(sym_mmul(E,E));
+    return 5e-1f*mat_prm.z*pown(sym_tr(E),2) + mat_prm.w*sym_tr(sym_mmul(E,E));
 }
 
 /*
@@ -237,7 +237,10 @@ float mec_p(float8 E)
  */
 
 //init
-kernel void vtx_init(global float  *vtx_xx,
+kernel void vtx_init(int3   vtx_dim,
+                     float3 x0,
+                     float3 dx,
+                     global float  *vtx_xx,
                      global float  *U0u,
                      global float  *U0c,
                      global float  *U1u,
@@ -257,16 +260,17 @@ kernel void vtx_init(global float  *vtx_xx,
                      global int    *Jcc_jj,
                      global float  *Jcc_vv)
 {
-    int3 vtx_dim = {get_global_size(0),get_global_size(1),get_global_size(2)};
     int3 vtx1_pos1 = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
-    
-//    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
-    
-    int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
+    int  vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
 //    printf("vtx %3d\n",vtx_idx);
 
+    printf("vtx_dim %v3d\n", vtx_dim);
+    printf("x0 %+v3f\n", x0);
+    printf("dx %+v3f\n", dx);
+    
+    
     //coord
-    float3 x = dx*convert_float3(vtx1_pos1);
+    float3 x = x0 + dx*convert_float3(vtx1_pos1);
     vtx_xx[3*vtx1_idx1  ] = x.x;
     vtx_xx[3*vtx1_idx1+1] = x.y;
     vtx_xx[3*vtx1_idx1+2] = x.z;
@@ -337,7 +341,11 @@ kernel void vtx_init(global float  *vtx_xx,
 
 
 //assemble
-kernel void vtx_assm(global float3 *vtx_xx,
+kernel void vtx_assm(int3   ele_dim,
+                     int3   vtx_dim,
+                     float3 dx,
+                     float4 mat_prm,
+                     global float3 *vtx_xx,
                      global float  *U0u,
                      global float  *U0c,
                      global float  *U1u,
@@ -357,9 +365,9 @@ kernel void vtx_assm(global float3 *vtx_xx,
                      global int    *Jcc_jj,
                      global float  *Jcc_vv)
 {
-    int3 vtx_dim    = {get_global_size(0),get_global_size(1),get_global_size(2)};
+//    int3 vtx_dim    = {get_global_size(0),get_global_size(1),get_global_size(2)};
     int3 vtx1_pos1  = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
-    int3 ele_dim    = vtx_dim - 1;
+//    int3 ele_dim    = vtx_dim - 1;
     
 //    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
     
@@ -368,7 +376,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
 //    printf("vtx1 %3d\n", vtx1_idx1);
     
     //volume
-    float vlm = dx*dx*dx;
+    float vlm = dx.x*dx.y*dx.z;
     
     //ele1
     for(uint ele1_idx2=0; ele1_idx2<8; ele1_idx2++)
@@ -475,7 +483,7 @@ kernel void vtx_assm(global float3 *vtx_xx,
                             float8 E2 = mec_E(def2);
                             
                             //stress
-                            float8 S2 = mec_S(E2);
+                            float8 S2 = mec_S(E2, mat_prm);
  
                             //uu
                             int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
@@ -499,73 +507,69 @@ kernel void vtx_assm(global float3 *vtx_xx,
 
 //boundary conditions
 kernel void fac_bnd1(int3   vtx_dim,
-                     float4 mat_prm)
-//                     global float  *F1u,
-//                     global float  *F1c,
-//                     global float  *Juu_vv,
-//                     global float  *Juc_vv,
-//                     global float  *Jcu_vv,
-//                     global float  *Jcc_vv)
+                     global float  *F1u,
+                     global float  *F1c,
+                     global float  *Juu_vv,
+                     global float  *Juc_vv,
+                     global float  *Jcu_vv,
+                     global float  *Jcc_vv)
 {
     int3 vtx1_pos1  = {0, get_global_id(0), get_global_id(1)}; //x=0
+    int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
     
-    printf("vtx_dim %v3d\n", vtx_dim);
-    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
-    
-    printf("mat_prm %v4f\n", mat_prm);
-    
-//    int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
+//    printf("vtx_dim %v3d\n", vtx_dim);
+//    printf("vtx1_pos1 %v3d\n", vtx1_pos1);
 //    printf("vtx1 %3d\n", vtx1_idx1);
-//
-//    //rhs c
-//    int idx_c = vtx1_idx1;
-//    F1c[idx_c] += 1e0f;
-//
-//    //rhs u
-//    for(int dim1=0; dim1<3; dim1++)
-//    {
-//        //u
-//        int idx_u = 3*vtx1_idx1 + dim1;
-//        F1u[idx_u] = 0e0f;
-//    }
-//
-//    //vtx2
-//    for(int vtx2_idx3=0; vtx2_idx3<27; vtx2_idx3++)
-//    {
-//        int3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
-//        int  vtx2_idx1 = fn_idx1(vtx2_pos1, vtx_dim);
-//
-////        printf("vtx2_pos1 %+v3d %d\n", vtx2_pos1, vtx2_bnd1);
-//
-//        //cc
-//        int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
-//        Jcc_vv[idx_cc] = (vtx1_idx1==vtx2_idx1);
-//
-//        //dim1
-//        for(int dim1=0; dim1<3; dim1++)
-//        {
-//            //they are transposes => redundancy if needed
-//
-//            //uc
-//            int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-//            Juc_vv[idx_uc] = 0e0f;
-//
-//            //cu
-//            int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-//            Jcu_vv[idx_cu] = 0e0f;
-//
-//            //dim2
-//            for(int dim2=0; dim2<3; dim2++)
-//            {
-//                //cc
-//                int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
-//                Juu_vv[idx_uu] = (vtx1_idx1==vtx2_idx1)*(dim1==dim2);
-//
-//            } //dim2
-//
-//        } //dim1
-//
-//    } //vtx2
+
+    //rhs c
+    int idx_c = vtx1_idx1;
+    F1c[idx_c] += 1e0f;
+
+    //rhs u
+    for(int dim1=0; dim1<3; dim1++)
+    {
+        //u
+        int idx_u = 3*vtx1_idx1 + dim1;
+        F1u[idx_u] = 0e0f;
+    }
+
+    //vtx2
+    for(int vtx2_idx3=0; vtx2_idx3<27; vtx2_idx3++)
+    {
+        int3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
+        int  vtx2_idx1 = fn_idx1(vtx2_pos1, vtx_dim);
+
+//        printf("vtx2_pos1 %+v3d %d\n", vtx2_pos1, vtx2_bnd1);
+
+        //cc
+        int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
+        Jcc_vv[idx_cc] = (vtx1_idx1==vtx2_idx1);
+
+        //dim1
+        for(int dim1=0; dim1<3; dim1++)
+        {
+            //they are transposes => redundancy if needed
+
+            //uc
+            int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+            Juc_vv[idx_uc] = 0e0f;
+
+            //cu
+            int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+            Jcu_vv[idx_cu] = 0e0f;
+
+            //dim2
+            for(int dim2=0; dim2<3; dim2++)
+            {
+                //cc
+                int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
+                Juu_vv[idx_uu] = (vtx1_idx1==vtx2_idx1)*(dim1==dim2);
+
+            } //dim2
+
+        } //dim1
+
+    } //vtx2
 
     return;
 }

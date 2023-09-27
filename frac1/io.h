@@ -56,7 +56,7 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
     fprintf(file1,"grid1\n");
     fprintf(file1,"ASCII\n");
     fprintf(file1,"DATASET STRUCTURED_GRID\n");
-    fprintf(file1,"DIMENSIONS %d %d %d\n", msh->nv[0], msh->nv[1], msh->nv[2]);
+    fprintf(file1,"DIMENSIONS %d %d %d\n", msh->vtx_dim.x, msh->vtx_dim.y, msh->vtx_dim.z);
     
     /*
      ===================
