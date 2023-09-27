@@ -146,13 +146,13 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
     
     //iterate
 //    SparseSolve(SparseConjugateGradient(), A, f, u);    //SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
-    SparseSolve(SparseGMRES(), A, f, u);
+//    SparseSolve(SparseGMRES(), A, f, u);
 //    SparseSolve(SparseLSMR(), A, f, u);
     
     //QR
-//    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);
-//    SparseSolve(QR, f , u);
-//    SparseCleanup(QR);
+    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);
+    SparseSolve(QR, f , u);
+    SparseCleanup(QR);
     
 
     //clean

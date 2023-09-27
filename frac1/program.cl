@@ -67,13 +67,15 @@ constant int3 off3[27] = {
 //soln
 float prb_a(float3 p)
 {
-    return p.x*p.y*(1e0f-p.x)*(1e0f-p.y);
+    return pown(p.x, 3);
+//    return p.x*p.y*(1e0f-p.x)*(1e0f-p.y);
 }
 
 //rhs
 float prb_f(float3 p)
 {
-    return -2e0f*(pown(p.x,2) - p.x + pown(p.y,2) - p.y);
+    return -6e0f*p.x;
+//    return -2e0f*(pown(p.x,2) - p.x + pown(p.y,2) - p.y);
 }
 
 /*
@@ -469,7 +471,7 @@ kernel void vtx_assm(int3   ele_dim,
                     
                     //cc
                     int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
-                    Jcc_vv[idx_cc] += (dot_e + dot_g)*qw;
+                    Jcc_vv[idx_cc] += dot_g*qw;
                     
                     //dim1
                     for(int dim1=0; dim1<3; dim1++)
