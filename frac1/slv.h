@@ -135,14 +135,14 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
     
     //iterate
 //    SparseSolve(SparseConjugateGradient(), A, f, u);    //SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
-//    SparseSolve(SparseGMRES(), A, f, u);
+    SparseSolve(SparseGMRES(), A, f, u);
 //    SparseSolve(SparseLSMR(), A, f, u);
     
     //QR
-    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);
-    SparseSolve(QR, f , u);
-    SparseCleanup(QR);
-    
+//    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);
+//    SparseSolve(QR, f , u);
+//    SparseCleanup(QR);
+//
     //clean
     SparseCleanup(A);
 
@@ -161,10 +161,9 @@ void err_nrm(struct msh_obj *msh, struct ocl_obj *ocl)
     //sum
     for(int i=0; i<msh->ne_tot; i++)
     {
-        e_sum += ptr[i];
-        
         float a = fabsf(ptr[i]);
         
+        e_sum += a;
         e_max = (a>e_max)?a:e_max;
         
 //        printf("%03d %e %e\n", i, ptr[i], e_sum);
@@ -175,7 +174,7 @@ void err_nrm(struct msh_obj *msh, struct ocl_obj *ocl)
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->ele_ee, ptr, 0, NULL, NULL);
     
     //disp
-    printf("%03d %e %e\n", msh->ele_dim.x, msh->dx.x, e_max);
+    printf("%03d %e %e %e\n", msh->ele_dim.x, msh->dx.x, e_sum, e_max);
     
     return;
 }

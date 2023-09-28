@@ -773,7 +773,7 @@ kernel void ele_err1(const int3     ele_dim,
     float c = 0.125f*(uc2[0] + uc2[1] + uc2[2] + uc2[3] + uc2[4] + uc2[5] + uc2[6] + uc2[7]);
         
     //write
-    ele_ee[ele_idx] = (c - a)*vlm;              //inf
+    ele_ee[ele_idx] = (c - a)*vlm;              //1-norm
 //    ele_ee[ele_idx] = pown((c - a), 2)*vlm;   //2-norm
 
     return;
