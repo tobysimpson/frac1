@@ -50,7 +50,7 @@ int main(int argc, const char * argv[])
     memset(ocl.uc, 0e0f,   msh.nv_tot*sizeof(float));
     
     //solve
-    slv_u(&msh, &ocl);
+//    slv_u(&msh, &ocl);
     slv_c(&msh, &ocl);
     
     //write to device

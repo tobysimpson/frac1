@@ -72,14 +72,16 @@ constant int3 off3[27] = {
 //soln
 float prb_a(float3 p)
 {
-    return pown(p.x, 3);
+    return sin(p.x) + cos(p.y) + sin(p.z);
+//    return pown(p.x, 3);
 //    return p.x*p.y*(1e0f-p.x)*(1e0f-p.y);
 }
 
 //rhs
 float prb_f(float3 p)
 {
-    return -6e0f*p.x;
+    return sin(p.x) + cos(p.y) + sin(p.z);
+//    return -6e0f*p.x;
 //    return -2e0f*(pown(p.x,2) - p.x + pown(p.y,2) - p.y);
 }
 
@@ -757,47 +759,22 @@ kernel void ele_err1(const int3     ele_dim,
     
     //    printf("ele_pos %v3d\n", ele_pos);
     
-    float e_sum = 0e0f;
     float vlm = dx.x*dx.y*dx.z;
     
     //read
     float uc2[8];
     mem_rg2f(U1c, uc2, ele_pos, ele_dim);
     
-    //qpt1 (change limit with scheme 1,8,27)
-    for(int qpt1=0; qpt1<8; qpt1++)
-    {
-//        //1pt
-//        float3 qp = (float3){qp1,qp1,qp1};
-//        float  qw = qw1*qw1*qw1*vlm;
-
-        //2pt
-        float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
-        float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z]*vlm;
-
-//        //3pt
-//        float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
-//        float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
-
-        //qp global
-        float3 qp_glb = dx*(convert_float3(ele_pos) + qp);
-//        printf("  qp_glb %v3f\n", qp_glb);
-
-        //basis
-        float  bas_ee[8];
-        bas_eval(qp, bas_ee);
-
-        //ana,num
-        float a = prb_a(qp_glb);
-        float c = bas_itpe(uc2, bas_ee);
-        
-        //sum
-        e_sum += pown((c - a), 2)*qw;
-        
-    } //qpt1
+    float3 mpt = (convert_float3(ele_pos) + 0.5f);
+//    printf("mpt %v3f\n", mpt);
     
+    //ana,num
+    float a = prb_a(mpt);
+    float c = 0.125f*(uc2[0] + uc2[1] + uc2[2] + uc2[3] + uc2[4] + uc2[5] + uc2[6] + uc2[7]);
+        
     //write
-    ele_ee[ele_idx] = e_sum;
+    ele_ee[ele_idx] = (c - a)*vlm;              //inf
+//    ele_ee[ele_idx] = pown((c - a), 2)*vlm;   //2-norm
 
     return;
 }

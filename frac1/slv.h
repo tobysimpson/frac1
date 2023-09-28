@@ -69,9 +69,9 @@ int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
     //iterate
-//    SparseSolve(SparseConjugateGradient(), A, f, u);    //yes SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
-//    SparseSolve(SparseGMRES(), A, f, u);              //yes
-    SparseSolve(SparseLSMR(), A, f, u);               //yes
+//    SparseSolve(SparseConjugateGradient(), A, f, u);    // SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
+//    SparseSolve(SparseGMRES(), A, f, u);
+    SparseSolve(SparseLSMR(), A, f, u);
     
     //QR
 //    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //no
@@ -156,11 +156,16 @@ void err_nrm(struct msh_obj *msh, struct ocl_obj *ocl)
     float *ptr = clEnqueueMapBuffer(ocl->command_queue, ocl->ele_ee, CL_TRUE, CL_MAP_READ, 0, msh->ne_tot*sizeof(float), 0, NULL, NULL, &ocl->err);
     
     float e_sum = 0e0f;
+    float e_max = fabsf(ptr[0]);
     
     //sum
     for(int i=0; i<msh->ne_tot; i++)
     {
         e_sum += ptr[i];
+        
+        float a = fabsf(ptr[i]);
+        
+        e_max = (a>e_max)?a:e_max;
         
 //        printf("%03d %e %e\n", i, ptr[i], e_sum);
     }
@@ -170,7 +175,7 @@ void err_nrm(struct msh_obj *msh, struct ocl_obj *ocl)
     clEnqueueUnmapMemObject(ocl->command_queue, ocl->ele_ee, ptr, 0, NULL, NULL);
     
     //disp
-    printf("%03d %e %e\n", msh->ele_dim.x, msh->dx.x, sqrtf(e_sum));
+    printf("%03d %e %e\n", msh->ele_dim.x, msh->dx.x, e_max);
     
     return;
 }

@@ -29,7 +29,7 @@ struct msh_obj
 void msh_init(struct msh_obj *msh)
 {
     //dim
-    msh->ele_dim.x = 32;
+    msh->ele_dim.x = 64;
     msh->ele_dim.y = msh->ele_dim.x;
     msh->ele_dim.z = msh->ele_dim.x;
     
@@ -40,7 +40,7 @@ void msh_init(struct msh_obj *msh)
     
     //range
     msh->x0 = (cl_float3){-0e0f,-0e0f,-0e0f};
-    msh->x1 = (cl_float3){+1e0f,+1e0f,+1e0f};
+    msh->x1 = (cl_float3){+2e+1f,+2e+1f,+2e+1f};
 //    msh->x1 = (cl_float3){msh->ele_dim.x, msh->ele_dim.y, msh->ele_dim.z};
     msh->dx = (cl_float3){(msh->x1.x - msh->x0.x)/(float)msh->ele_dim.x, (msh->x1.y - msh->x0.y)/(float)msh->ele_dim.y, (msh->x1.z - msh->x0.z)/(float)msh->ele_dim.z};
     
