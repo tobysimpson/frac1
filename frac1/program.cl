@@ -72,7 +72,7 @@ constant int3 off3[27] = {
 //soln
 float prb_a(float3 p)
 {
-    return sin(p.x) + cos(p.y) + sin(p.z);
+    return sin(M_PI_F*p.x)*sin(M_PI_F*p.y)*sin(M_PI_F*p.z);
 //    return pown(p.x, 3);
 //    return p.x*p.y*(1e0f-p.x)*(1e0f-p.y);
 }
@@ -80,7 +80,7 @@ float prb_a(float3 p)
 //rhs
 float prb_f(float3 p)
 {
-    return sin(p.x) + cos(p.y) + sin(p.z);
+    return 3e0f*pown(M_PI_F,2)*sin(M_PI_F*p.x)*sin(M_PI_F*p.y)*sin(M_PI_F*p.z);
 //    return -6e0f*p.x;
 //    return -2e0f*(pown(p.x,2) - p.x + pown(p.y,2) - p.y);
 }
@@ -747,8 +747,8 @@ kernel void vtx_bnd1(const int3   vtx_dim,
 }
 
 
-//error norm
-kernel void ele_err1(const int3     ele_dim,
+//error
+kernel void ele_err1(const int3    ele_dim,
                      const float3   x0,
                      const float3   dx,
                      global float   *U1c,
@@ -764,6 +764,7 @@ kernel void ele_err1(const int3     ele_dim,
     //read
     float uc2[8];
     mem_rg2f(U1c, uc2, ele_pos, ele_dim);
+
     
     float3 mpt = dx*(convert_float3(ele_pos) + 0.5f);
 //    printf("mpt %v3f\n", mpt);
@@ -773,8 +774,41 @@ kernel void ele_err1(const int3     ele_dim,
     float c = 0.125f*(uc2[0] + uc2[1] + uc2[2] + uc2[3] + uc2[4] + uc2[5] + uc2[6] + uc2[7]);
         
     //write
-    ele_ee[ele_idx] = fabs(c - a)*vlm;              //1-norm
-//    ele_ee[ele_idx] = pown((c - a), 2)*vlm;   //2-norm
+//    ele_ee[ele_idx] = fabs(c - a)*vlm;          //1-norm
+    ele_ee[ele_idx] = pown((c - a), 2)*vlm;   //2-norm
 
     return;
 }
+
+
+////error norm
+//kernel void vtx_err1(const int3     vtx_dim,
+//                     global float   *U1c,
+//                     global float   *vtx_ee)
+//{
+//    int3 ele_pos  = {get_global_id(0), get_global_id(1), get_global_id(2)};
+//    int ele_idx = fn_idx1(ele_pos, ele_dim);
+//
+//    //    printf("ele_pos %v3d\n", ele_pos);
+//
+//    float vlm = dx.x*dx.y*dx.z;
+//
+//    //read
+//    float uc2[8];
+//    mem_rg2f(U1c, uc2, ele_pos, ele_dim);
+//
+//
+//
+//    float3 mpt = dx*(convert_float3(ele_pos) + 0.5f);
+////    printf("mpt %v3f\n", mpt);
+//
+//    //ana,num
+//    float a = prb_a(mpt);
+//    float c = 0.125f*(uc2[0] + uc2[1] + uc2[2] + uc2[3] + uc2[4] + uc2[5] + uc2[6] + uc2[7]);
+//
+//    //write
+////    ele_ee[ele_idx] = fabs(c - a)*vlm;          //1-norm
+//    ele_ee[ele_idx] = pown((c - a), 2)*vlm;   //2-norm
+//
+//    return;
+//}

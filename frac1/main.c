@@ -60,8 +60,12 @@ int main(int argc, const char * argv[])
     //store prior
     ocl.err = clEnqueueCopyBuffer( ocl.command_queue, ocl.U1c, ocl.U0c, 0, 0, msh.nv_tot*sizeof(float), 0, NULL, NULL);
     
-    //error
+    //calc error
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.ele_err1, 3, NULL, ne, NULL, 0, NULL, NULL);
+    
+    //read from device
+    ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.ele_ec, CL_TRUE, 0, msh.ne_tot*sizeof(float), ocl.ec, 0, NULL, NULL);
+    
     err_nrm(&msh, &ocl);
     
     //write vtk
