@@ -29,7 +29,7 @@ struct msh_obj
 void msh_init(struct msh_obj *msh)
 {
     //dim
-    msh->ele_dim.x = 4;
+    msh->ele_dim.x = 32;
     msh->ele_dim.y = msh->ele_dim.x;
     msh->ele_dim.z = msh->ele_dim.x;
     
@@ -49,7 +49,7 @@ void msh_init(struct msh_obj *msh)
     printf("dx %+e %+e %+e\n", msh->dx.x, msh->dx.y, msh->dx.z);
     
     //material
-    msh->mat_prm.x = 1e-0f;                                                                                 //youngs    E
+    msh->mat_prm.x = 1e-1f;                                                                                 //youngs    E
     msh->mat_prm.y = 0.25f;                                                                                 //poisson   v
     msh->mat_prm.z = (msh->mat_prm.x*msh->mat_prm.y)/((1e0f+msh->mat_prm.y)*(1e0f-2e0f*msh->mat_prm.y));    //lamé      lambda
     msh->mat_prm.w = msh->mat_prm.x/(2e0f*(1e0f+msh->mat_prm.y));                                           //lamé      mu
