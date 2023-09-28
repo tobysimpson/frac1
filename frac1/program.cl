@@ -491,13 +491,13 @@ kernel void vtx_assm(const int3   ele_dim,
 //                float3 qp = (float3){qp1,qp1,qp1};
 //                float  qw = qw1*qw1*qw1*vlm;
                 
-//                //2pt
-//                float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
-//                float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z]*vlm;
+                //2pt
+                float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
+                float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z]*vlm;
                 
-                //3pt
-                float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
-                float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
+//                //3pt
+//                float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
+//                float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
                 
                 //qp global
                 float3 qp_glb = dx*(convert_float3(ele1_pos1) + qp);
@@ -672,12 +672,12 @@ kernel void fac_bnd1(const int3   vtx_dim,
 kernel void vtx_bnd1(const int3   vtx_dim,
                      const float3 x0,
                      const float3 dx,
-                     global float  *F1u,
-                     global float  *F1c,
-                     global float  *Juu_vv,
-                     global float  *Juc_vv,
-                     global float  *Jcu_vv,
-                     global float  *Jcc_vv)
+                     global float *F1u,
+                     global float *F1c,
+                     global float *Juu_vv,
+                     global float *Juc_vv,
+                     global float *Jcu_vv,
+                     global float *Jcc_vv)
 {
     int3 vtx1_pos1  = {get_global_id(0), get_global_id(1), get_global_id(2)};
     
@@ -757,25 +757,56 @@ kernel void ele_err1(const int3    ele_dim,
     int3 ele_pos  = {get_global_id(0), get_global_id(1), get_global_id(2)};
     int ele_idx = fn_idx1(ele_pos, ele_dim);
     
-    //    printf("ele_pos %v3d\n", ele_pos);
+//    printf("ele_pos %v3d\n", ele_pos);
+//    printf("x0 %v3f\n", x0);
+//    printf("dx %v3f\n", dx);
     
     float vlm = dx.x*dx.y*dx.z;
+    
+    float e_sum = 0e0f;
     
     //read
     float uc2[8];
     mem_rg2f(U1c, uc2, ele_pos, ele_dim);
 
-    
-    float3 mpt = dx*(convert_float3(ele_pos) + 0.5f);
-//    printf("mpt %v3f\n", mpt);
-    
-    //ana,num
-    float a = prb_a(mpt);
-    float c = 0.125f*(uc2[0] + uc2[1] + uc2[2] + uc2[3] + uc2[4] + uc2[5] + uc2[6] + uc2[7]);
+    //qpt1 (change limit with scheme 1,8,27)
+    for(int qpt1=0; qpt1<8; qpt1++)
+    {
+//                //1pt
+//                float3 qp = (float3){qp1,qp1,qp1};
+//                float  qw = qw1*qw1*qw1*vlm;
         
+        //2pt
+        float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
+        float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z]*vlm;
+        
+//                //3pt
+//                float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
+//                float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
+        
+        //qp global
+        float3 qp_glb = x0 + dx*(convert_float3(ele_pos) + qp);
+//        printf("  qp %v3f\n", qp);
+//        printf("  qp_glb %v3f\n", qp_glb);
+//        printf("  qw %f\n", qw);
+        
+        //basis
+        float  bas_ee[8];
+        bas_eval(qp, bas_ee);
+
+        //interp
+        float c = bas_itpe(uc2, bas_ee);
+    
+        //ana
+        float a = prb_a(qp_glb);
+        
+        //sum
+        e_sum += fabsf(c - a)*qw;
+    
+    } //qpt
+    
     //write
-//    ele_ee[ele_idx] = fabs(c - a)*vlm;          //1-norm
-    ele_ee[ele_idx] = pown((c - a), 2)*vlm;   //2-norm
+    ele_ee[ele_idx] = e_sum;
 
     return;
 }

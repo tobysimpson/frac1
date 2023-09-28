@@ -168,7 +168,7 @@ void err_nrm(struct msh_obj *msh, struct ocl_obj *ocl)
     printf("\n");
 
     //disp
-    printf("%03d %e %e\n", msh->ele_dim.x, msh->dx.x, sqrtf(e_sum));
+    printf("%03d %e %e\n", msh->ele_dim.x, msh->dx.x, e_sum);
     
     return;
 }
