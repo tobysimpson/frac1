@@ -227,7 +227,7 @@ void mem_rg2f(global float *buf, float uu2[8], int3 pos, int3 dim)
 {
     for(int i=0; i<8; i++)
     {
-        int3 adj_pos1 = pos + off2[i] - 1;
+        int3 adj_pos1 = pos + off2[i];
         int  adj_idx1 = fn_idx1(adj_pos1, dim);
 
         //copy
@@ -485,19 +485,19 @@ kernel void vtx_assm(const int3   ele_dim,
 //            printf("ele1 %d %+v3d %d %d\n", ele1_idx2, ele1_pos1, ele1_bnd1, vtx1_idx2);
             
             //qpt1 (change limit with scheme 1,8,27)
-            for(int qpt1=0; qpt1<8; qpt1++)
+            for(int qpt1=0; qpt1<27; qpt1++)
             {
 //                //1pt
 //                float3 qp = (float3){qp1,qp1,qp1};
 //                float  qw = qw1*qw1*qw1*vlm;
                 
-                //2pt
-                float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
-                float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z]*vlm;
+//                //2pt
+//                float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
+//                float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z]*vlm;
                 
-//                //3pt
-//                float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
-//                float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
+                //3pt
+                float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
+                float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
                 
                 //qp global
                 float3 qp_glb = dx*(convert_float3(ele1_pos1) + qp);
@@ -765,7 +765,7 @@ kernel void ele_err1(const int3     ele_dim,
     float uc2[8];
     mem_rg2f(U1c, uc2, ele_pos, ele_dim);
     
-    float3 mpt = (convert_float3(ele_pos) + 0.5f);
+    float3 mpt = dx*(convert_float3(ele_pos) + 0.5f);
 //    printf("mpt %v3f\n", mpt);
     
     //ana,num
@@ -773,7 +773,7 @@ kernel void ele_err1(const int3     ele_dim,
     float c = 0.125f*(uc2[0] + uc2[1] + uc2[2] + uc2[3] + uc2[4] + uc2[5] + uc2[6] + uc2[7]);
         
     //write
-    ele_ee[ele_idx] = (c - a)*vlm;              //1-norm
+    ele_ee[ele_idx] = fabs(c - a)*vlm;              //1-norm
 //    ele_ee[ele_idx] = pown((c - a), 2)*vlm;   //2-norm
 
     return;
