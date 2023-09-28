@@ -46,9 +46,9 @@ float   mec_p(float8 E, float4 mat_prm);
 float   prb_a(float3 x);
 float   prb_f(float3 x);
 
-void    mem_gr3f(global float *buf, float uu3[27], int3 pos, int3 dim);
-void    mem_gr2f(global float *buf, float uu2[8], int3 pos, int3 dim);
-void    mem_lr2f(float uu3[27], float uu2[8], int3 pos);
+void    mem_rg3f(global float *buf, float uu3[27], int3 pos, int3 dim);
+void    mem_rg2f(global float *buf, float uu2[8], int3 pos, int3 dim);
+void    mem_rl2f(float uu3[27], float uu2[8], int3 pos);
 
 /*
  ===================================
@@ -207,7 +207,7 @@ float bas_itpe(float uu2[8], float bas_ee[8])
  */
 
 //read 3x3x3 from global
-void mem_gr3f(global float *buf, float uu3[27], int3 pos, int3 dim)
+void mem_rg3f(global float *buf, float uu3[27], int3 pos, int3 dim)
 {
     for(int i=0; i<27; i++)
     {
@@ -221,7 +221,7 @@ void mem_gr3f(global float *buf, float uu3[27], int3 pos, int3 dim)
 }
 
 //read 2x2x2 from global
-void mem_gr2f(global float *buf, float uu2[8], int3 pos, int3 dim)
+void mem_rg2f(global float *buf, float uu2[8], int3 pos, int3 dim)
 {
     for(int i=0; i<8; i++)
     {
@@ -235,7 +235,7 @@ void mem_gr2f(global float *buf, float uu2[8], int3 pos, int3 dim)
 }
 
 //read 2x2x2 from 3x3x3
-void mem_lr2f(float uu3[27], float uu2[8], int3 pos)
+void mem_rl2f(float uu3[27], float uu2[8], int3 pos)
 {
     for(int i=0; i<8; i++)
     {
@@ -765,7 +765,7 @@ kernel void ele_err1(const int3     ele_dim,
     
     //read
     float uc2[8];
-    mem_gr2f(U1c, uc2, ele_pos, ele_dim);
+    mem_rg2f(U1c, uc2, ele_pos, ele_dim);
     
     //qpt1 (change limit with scheme 1,8,27)
     for(int qpt1=0; qpt1<8; qpt1++)

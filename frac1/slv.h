@@ -33,7 +33,6 @@ int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
 
     //size of input array
     long blk_num = 27*9*msh->nv_tot;
-    
     int num_rows = 3*msh->nv_tot;
     int num_cols = 3*msh->nv_tot;
 
@@ -54,7 +53,8 @@ int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
     printf("nnz=%lu\n", A.structure.columnStarts[A.structure.columnCount]);
     
     //fill host
-    memset(ocl->uu, 0e0f, 3*msh->nv_tot*sizeof(float));
+//    memset(ocl->uu, 0e0f, 3*msh->nv_tot*sizeof(float));
+    ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->U1u, CL_TRUE, 0, 3*msh->nv_tot*sizeof(float), ocl->uu, 0, NULL, NULL);
     ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->F1u, CL_TRUE, 0, 3*msh->nv_tot*sizeof(float), ocl->fu, 0, NULL, NULL);
     
     //vecs
@@ -157,7 +157,8 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
     SparseCleanup(QR);
     
 
-    //write to device
+    //store prior solution, write to device
+    ocl->err = clEnqueueCopyBuffer(ocl->command_queue, ocl->U1c, ocl->U0c, 0, 0, msh->nv_tot*sizeof(float), 0, NULL, NULL);
     ocl->err = clEnqueueReadBuffer(ocl->command_queue, ocl->U1c, CL_TRUE, 0,   msh->nv_tot*sizeof(float), ocl->uc, 0, NULL, NULL);
 
     //clean
