@@ -72,14 +72,16 @@ constant int3 off3[27] = {
 //soln
 float prb_a(float3 p)
 {
+//    return pown(p.x,2);
     return sin(M_PI_F*p.x)*sin(M_PI_F*p.y)*sin(M_PI_F*p.z);
 //    return pown(p.x, 3);
 //    return p.x*p.y*(1e0f-p.x)*(1e0f-p.y);
 }
 
-//rhs
+//rhs -u''
 float prb_f(float3 p)
 {
+//    return -2e0f;
     return 3e0f*pown(M_PI_F,2)*sin(M_PI_F*p.x)*sin(M_PI_F*p.y)*sin(M_PI_F*p.z);
 //    return -6e0f*p.x;
 //    return -2e0f*(pown(p.x,2) - p.x + pown(p.y,2) - p.y);
@@ -341,6 +343,7 @@ kernel void vtx_init(const  int3    vtx_dim,
                      global float  *U1c,
                      global float  *F1c,
                      global float  *A1c,
+                     global float  *E1c,
                      global int    *Juu_ii,
                      global int    *Juu_jj,
                      global float  *Juu_vv,
@@ -363,6 +366,7 @@ kernel void vtx_init(const  int3    vtx_dim,
     U1c[idx_c] = 0e0f;
     F1c[idx_c] = 0e0f;
     A1c[idx_c] = prb_a(x);
+    E1c[idx_c] = 0e0f;
     
     //u
     for(int dim1=0; dim1<3; dim1++)
@@ -423,11 +427,10 @@ kernel void vtx_init(const  int3    vtx_dim,
 
 
 //assemble
-kernel void vtx_assm(const int3     ele_dim,
-                     const int3     vtx_dim,
+kernel void vtx_assm(const int3     vtx_dim,
+                     const float3   x0,
                      const float3   dx,
                      const float4   mat_prm,
-                     global float3 *vtx_xx,
                      global float  *U1u,
                      global float  *F1u,
                      global float  *U1c,
@@ -439,6 +442,7 @@ kernel void vtx_assm(const int3     ele_dim,
                      global int    *Jcc_jj,
                      global float  *Jcc_vv)
 {
+    int3 ele_dim = vtx_dim - 1;
     int3 vtx1_pos1  = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
     int  vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
     
@@ -485,7 +489,7 @@ kernel void vtx_assm(const int3     ele_dim,
 //                float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
                 
                 //qp global
-                float3 qp_glb = dx*(convert_float3(ele1_pos1) + qp);
+                float3 qp_glb = x0 + dx*(convert_float3(ele1_pos1) + qp);
 //                printf("  qp_glb %v3f\n", qp_glb);
                 
                 //basis
@@ -583,6 +587,99 @@ kernel void vtx_assm(const int3     ele_dim,
 
 
 //boundary conditions
+kernel void vtx_bnd1(const int3    vtx_dim,
+                     const float3  x0,
+                     const float3  dx,
+                     global float *U1c,
+                     global float *F1c,
+                     global float *Jcc_vv)
+{
+    int3 vtx1_pos1  = {get_global_id(0), get_global_id(1), get_global_id(2)};
+    
+    //on boundary
+    if(fn_bnd2(vtx1_pos1, vtx_dim))
+    {
+//        printf("vtx1_pos1 %v3d\n", vtx1_pos1);
+        
+        int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
+        
+
+        float3 x = x0 + dx*convert_float3(vtx1_pos1);
+        
+        //c - both for cg
+        int idx_c = vtx1_idx1;
+        U1c[idx_c] = prb_a(x);
+        F1c[idx_c] = prb_a(x);
+
+        //rhs u
+        for(int dim1=0; dim1<3; dim1++)
+        {
+            //u
+//            int idx_u = 3*vtx1_idx1 + dim1;
+//            F1u[idx_u] = 0e0f;
+        }
+
+        //vtx2
+        for(int vtx2_idx3=0; vtx2_idx3<27; vtx2_idx3++)
+        {
+            int3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
+            int  vtx2_idx1 = fn_idx1(vtx2_pos1, vtx_dim);
+
+    //        printf("vtx2_pos1 %+v3d %d\n", vtx2_pos1, vtx2_bnd1);
+
+            //cc
+            int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
+            Jcc_vv[idx_cc] = (vtx1_idx1==vtx2_idx1);
+
+            //dim1
+            for(int dim1=0; dim1<3; dim1++)
+            {
+                //they are transposes => redundancy if needed
+
+                //uc
+//                int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+//                Juc_vv[idx_uc] = 0e0f;
+
+                //cu
+//                int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+//                Jcu_vv[idx_cu] = 0e0f;
+
+                //dim2
+                for(int dim2=0; dim2<3; dim2++)
+                {
+                    //uu
+//                    int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
+//                    Juu_vv[idx_uu] = (vtx1_idx1==vtx2_idx1)*(dim1==dim2);
+
+                } //dim2
+
+            } //dim1
+
+        } //vtx2
+        
+    }//bnd2
+
+    return;
+}
+
+
+//error
+kernel void vtx_err1(const int3     vtx_dim,
+                     global float   *U1c,
+                     global float   *A1c,
+                     global float   *E1c)
+{
+    int3 vtx_pos  = {get_global_id(0), get_global_id(1), get_global_id(2)};
+    int  vtx_idx = fn_idx1(vtx_pos, vtx_dim);
+
+    //write
+    E1c[vtx_idx] = fabs(A1c[vtx_idx] - U1c[vtx_idx]);
+
+    return;
+}
+
+
+//boundary conditions
 kernel void fac_bnd1(const int3     vtx_dim,
                      const float3   x0,
                      const float3   dx,
@@ -649,166 +746,3 @@ kernel void fac_bnd1(const int3     vtx_dim,
     return;
 }
 
-
-
-//boundary conditions
-kernel void vtx_bnd1(const int3    vtx_dim,
-                     const float3  x0,
-                     const float3  dx,
-                     global float *U1u,
-                     global float *F1u,
-                     global float *U1c,
-                     global float *F1c,
-                     global float *Juu_vv,
-                     global float *Jcc_vv)
-{
-    int3 vtx1_pos1  = {get_global_id(0), get_global_id(1), get_global_id(2)};
-    
-    //on boundary
-    if(fn_bnd2(vtx1_pos1, vtx_dim))
-    {
-//        printf("vtx1_pos1 %v3d\n", vtx1_pos1);
-        
-        int vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
-        
-
-        float3 x = x0 + dx*convert_float3(vtx1_pos1);
-        
-        //c - both for cg
-        int idx_c = vtx1_idx1;
-        U1c[idx_c] = prb_a(x);
-        F1c[idx_c] = prb_a(x);
-
-        //rhs u
-        for(int dim1=0; dim1<3; dim1++)
-        {
-            //u
-//            int idx_u = 3*vtx1_idx1 + dim1;
-//            F1u[idx_u] = 0e0f;
-        }
-
-        //vtx2
-        for(int vtx2_idx3=0; vtx2_idx3<27; vtx2_idx3++)
-        {
-            int3 vtx2_pos1 = vtx1_pos1 + off3[vtx2_idx3] - 1;
-            int  vtx2_idx1 = fn_idx1(vtx2_pos1, vtx_dim);
-
-    //        printf("vtx2_pos1 %+v3d %d\n", vtx2_pos1, vtx2_bnd1);
-
-            //cc
-            int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
-            Jcc_vv[idx_cc] = (vtx1_idx1==vtx2_idx1);
-
-            //dim1
-            for(int dim1=0; dim1<3; dim1++)
-            {
-                //they are transposes => redundancy if needed
-
-                //uc
-//                int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-//                Juc_vv[idx_uc] = 0e0f;
-
-                //cu
-//                int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-//                Jcu_vv[idx_cu] = 0e0f;
-
-                //dim2
-                for(int dim2=0; dim2<3; dim2++)
-                {
-                    //cc
-//                    int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
-//                    Juu_vv[idx_uu] = (vtx1_idx1==vtx2_idx1)*(dim1==dim2);
-
-                } //dim2
-
-            } //dim1
-
-        } //vtx2
-        
-    }//bnd2
-
-    return;
-}
-
-/*
-
-//error
-kernel void ele_err1(const int3    ele_dim,
-                     const float3   x0,
-                     const float3   dx,
-                     global float   *U1c,
-                     global float   *ele_ee)
-{
-    int3 ele_pos  = {get_global_id(0), get_global_id(1), get_global_id(2)};
-    int ele_idx = fn_idx1(ele_pos, ele_dim);
-    
-//    printf("ele_pos %v3d\n", ele_pos);
-//    printf("x0 %v3f\n", x0);
-//    printf("dx %v3f\n", dx);
-    
-    float vlm = dx.x*dx.y*dx.z;
-    
-    float e_sum = 0e0f;
-    
-    //read
-    float uc2[8];
-    mem_rg2f(U1c, uc2, ele_pos, ele_dim);
-
-    //qpt1 (change limit with scheme 1,8,27)
-    for(int qpt1=0; qpt1<8; qpt1++)
-    {
-//                //1pt
-//                float3 qp = (float3){qp1,qp1,qp1};
-//                float  qw = qw1*qw1*qw1*vlm;
-        
-        //2pt
-        float3 qp = (float3){qp2[off2[qpt1].x], qp2[off2[qpt1].y], qp2[off2[qpt1].z]};
-        float  qw = qw2[off2[qpt1].x]*qw2[off2[qpt1].y]*qw2[off2[qpt1].z]*vlm;
-        
-//                //3pt
-//                float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
-//                float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
-        
-        //qp global
-        float3 qp_glb = x0 + dx*(convert_float3(ele_pos) + qp);
-//        printf("  qp %v3f\n", qp);
-//        printf("  qp_glb %v3f\n", qp_glb);
-//        printf("  qw %f\n", qw);
-        
-        //basis
-        float  bas_ee[8];
-        bas_eval(qp, bas_ee);
-
-        //interp
-        float c = bas_itpe(uc2, bas_ee);
-    
-        //ana
-        float a = prb_a(qp_glb);
-        
-        //sum
-        e_sum += fabs(c - a)*qw;
-    
-    } //qpt
-    
-    //write
-    ele_ee[ele_idx] = e_sum;
-
-    return;
-}
-
-*/
-
-//error
-kernel void vtx_err1(const int3     vtx_dim,
-                     global float   *U1c,
-                     global float   *A1c,
-                     global float   *E1c)
-{
-    int3 vtx_pos  = {get_global_id(0), get_global_id(1), get_global_id(2)};
-    int  vtx_idx = fn_idx1(vtx_pos, vtx_dim);
-
-    //write
-    E1c[vtx_idx] = fabs(A1c[vtx_idx] - U1c[vtx_idx]);
-
-    return;
-}

@@ -75,13 +75,13 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
      ===================
      */
     
-    fprintf(file1,"VECTORS U1u float\n");
-    
-    for(int i=0; i<msh->nv_tot; i++)
-    {
-        int row = 3*i;
-        fprintf(file1, "%e %e %e\n", ocl->hst.U1u[row], ocl->hst.U1u[row+1], ocl->hst.U1u[row+2]);
-    }
+//    fprintf(file1,"VECTORS U1u float\n");
+//
+//    for(int i=0; i<msh->nv_tot; i++)
+//    {
+//        int row = 3*i;
+//        fprintf(file1, "%e %e %e\n", ocl->hst.U1u[row], ocl->hst.U1u[row+1], ocl->hst.U1u[row+2]);
+//    }
 
     
     /*
@@ -91,18 +91,18 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
      */
     
 
-    fprintf(file1,"VECTORS F1u float\n");
-    
-    for(int i=0; i<msh->nv_tot; i++)
-    {
-        int row = 3*i;
-        fprintf(file1, "%e %e %e\n", ocl->hst.F1u[row], ocl->hst.F1u[row+1], ocl->hst.F1u[row+2]);
-    }
+//    fprintf(file1,"VECTORS F1u float\n");
+//
+//    for(int i=0; i<msh->nv_tot; i++)
+//    {
+//        int row = 3*i;
+//        fprintf(file1, "%e %e %e\n", ocl->hst.F1u[row], ocl->hst.F1u[row+1], ocl->hst.F1u[row+2]);
+//    }
     
     
     /*
      ===================
-     uc
+     c
      ===================
      */
     
@@ -143,6 +143,21 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
     for(int i=0; i<msh->nv_tot; i++)
     {
         fprintf(file1, "%e\n", ocl->hst.A1c[i]);
+    }
+    
+    /*
+     ===================
+     ac
+     ===================
+     */
+    
+
+    fprintf(file1,"SCALARS E1c float 1\n");
+    fprintf(file1,"LOOKUP_TABLE default\n");
+    
+    for(int i=0; i<msh->nv_tot; i++)
+    {
+        fprintf(file1, "%e\n", ocl->hst.E1c[i]);
     }
 
     //clean up

@@ -24,7 +24,7 @@ void dsp_vec(DenseVector_Float v)
 //solve
 int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
 {
-    printf("slv u\n");
+    printf("slv_u\n");
     
     //init mtx
     SparseAttributes_t atts;
@@ -47,7 +47,7 @@ int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
     f.count = 3*msh->nv_tot;
     
     u.data = ocl->hst.U1u;
-    f.data = ocl->hst.U1c;
+    f.data = ocl->hst.F1u;
 
     /*
      ========================
@@ -57,13 +57,13 @@ int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
     
     //iterate
 //    SparseSolve(SparseConjugateGradient(), A, f, u);    // SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
-//    SparseSolve(SparseGMRES(), A, f, u);
+    SparseSolve(SparseGMRES(), A, f, u);
 //    SparseSolve(SparseLSMR(), A, f, u);
     
     //QR
-    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //no
-    SparseSolve(QR, f , u);
-    SparseCleanup(QR);
+//    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //no
+//    SparseSolve(QR, f , u);
+//    SparseCleanup(QR);
     
     //clean
     SparseCleanup(A);
@@ -75,7 +75,7 @@ int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
 //solve
 int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
 {
-    printf("slv c\n");
+    printf("slv_c\n");
     
     //init mtx
     SparseAttributes_t atts;
@@ -129,23 +129,21 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
 
 void err_nrm(struct msh_obj *msh, struct ocl_obj *ocl)
 {
-    float e_sum = 0e0f;
-    float e_max = ocl->hst.vtx_ec[0];
+    float e_max = ocl->hst.E1c[0];
     
     //sum
     for(int i=0; i<msh->ne_tot; i++)
     {
-        float e = ocl->hst.vtx_ec[i];
+        float e = ocl->hst.E1c[i];
         
-        e_sum += e;
         e_max = (e>e_max)?e:e_max;
         
-        printf("%03d %e %e\n", i, e, e_sum);
+//        printf("%03d %e %e\n", i, e, e_max);
     }
     printf("\n");
 
     //disp
-    printf("%03d %e %e\n", msh->ele_dim.x, msh->dx.x, e_sum);
+    printf("%03d %e %e\n", msh->ele_dim.x, msh->dx.x, e_max);
     
     return;
 }
