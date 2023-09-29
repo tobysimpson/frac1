@@ -340,6 +340,7 @@ kernel void vtx_init(const  int3    vtx_dim,
                      global float  *F1u,
                      global float  *U1c,
                      global float  *F1c,
+                     global float  *A1c,
                      global int    *Juu_ii,
                      global int    *Juu_jj,
                      global float  *Juu_vv,
@@ -359,8 +360,9 @@ kernel void vtx_init(const  int3    vtx_dim,
     
     //c
     int idx_c = vtx1_idx1;
-    U1c[idx_c] = 1e0f;
-    F1c[idx_c] = 2e0f;
+    U1c[idx_c] = 0e0f;
+    F1c[idx_c] = 0e0f;
+    A1c[idx_c] = prb_a(x);
     
     //u
     for(int dim1=0; dim1<3; dim1++)
@@ -421,25 +423,18 @@ kernel void vtx_init(const  int3    vtx_dim,
 
 
 //assemble
-kernel void vtx_assm(const int3   ele_dim,
-                     const int3   vtx_dim,
-                     const float3 dx,
-                     const float4 mat_prm,
+kernel void vtx_assm(const int3     ele_dim,
+                     const int3     vtx_dim,
+                     const float3   dx,
+                     const float4   mat_prm,
                      global float3 *vtx_xx,
-                     global float  *U0c,
                      global float  *U1u,
-                     global float  *U1c,
                      global float  *F1u,
+                     global float  *U1c,
                      global float  *F1c,
                      global int    *Juu_ii,
                      global int    *Juu_jj,
                      global float  *Juu_vv,
-                     global int    *Juc_ii,
-                     global int    *Juc_jj,
-                     global float  *Juc_vv,
-                     global int    *Jcu_ii,
-                     global int    *Jcu_jj,
-                     global float  *Jcu_vv,
                      global int    *Jcc_ii,
                      global int    *Jcc_jj,
                      global float  *Jcc_vv)
@@ -475,7 +470,7 @@ kernel void vtx_assm(const int3   ele_dim,
 //            printf("ele1 %d %+v3d %d %d\n", ele1_idx2, ele1_pos1, ele1_bnd1, vtx1_idx2);
             
             //qpt1 (change limit with scheme 1,8,27)
-            for(int qpt1=0; qpt1<27; qpt1++)
+            for(int qpt1=0; qpt1<8; qpt1++)
             {
 //                //1pt
 //                float3 qp = (float3){qp1,qp1,qp1};
@@ -545,12 +540,12 @@ kernel void vtx_assm(const int3   ele_dim,
                         float8 E1 = mec_E(def1);
                         
                         //couple
-                        float uc = qw;
+//                        float uc = qw;
                         
-                        //uc, cu
-                        int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-                        Juc_vv[idx_uc] += uc;
-                        Jcu_vv[idx_uc] += uc;
+//                        //uc, cu
+//                        int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+//                        Juc_vv[idx_uc] += uc;
+//                        Jcu_vv[idx_uc] += uc;
                         
                         //dim2
                         for(int dim2=0; dim2<3; dim2++)
@@ -587,15 +582,13 @@ kernel void vtx_assm(const int3   ele_dim,
 }
 
 
-//boundary conditions - u only
-kernel void fac_bnd1(const int3   vtx_dim,
-                     const float3 x0,
-                     const float3 dx,
+//boundary conditions
+kernel void fac_bnd1(const int3     vtx_dim,
+                     const float3   x0,
+                     const float3   dx,
                      global float  *F1u,
                      global float  *F1c,
                      global float  *Juu_vv,
-                     global float  *Juc_vv,
-                     global float  *Jcu_vv,
                      global float  *Jcc_vv)
 {
     int3 vtx1_pos1  = {0, get_global_id(0), get_global_id(1)}; //x=0
@@ -658,15 +651,15 @@ kernel void fac_bnd1(const int3   vtx_dim,
 
 
 
-//boundary conditions - c only
-kernel void vtx_bnd1(const int3   vtx_dim,
-                     const float3 x0,
-                     const float3 dx,
+//boundary conditions
+kernel void vtx_bnd1(const int3    vtx_dim,
+                     const float3  x0,
+                     const float3  dx,
+                     global float *U1u,
                      global float *F1u,
+                     global float *U1c,
                      global float *F1c,
                      global float *Juu_vv,
-                     global float *Juc_vv,
-                     global float *Jcu_vv,
                      global float *Jcc_vv)
 {
     int3 vtx1_pos1  = {get_global_id(0), get_global_id(1), get_global_id(2)};
@@ -681,8 +674,9 @@ kernel void vtx_bnd1(const int3   vtx_dim,
 
         float3 x = x0 + dx*convert_float3(vtx1_pos1);
         
-        //rhs c
+        //c - both for cg
         int idx_c = vtx1_idx1;
+        U1c[idx_c] = prb_a(x);
         F1c[idx_c] = prb_a(x);
 
         //rhs u

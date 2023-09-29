@@ -34,8 +34,8 @@ int main(int argc, const char * argv[])
     
     //kernels
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_init, 3, NULL, nv, NULL, 0, NULL, NULL);
-//    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, nv, NULL, 0, NULL, NULL);
-//    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_bnd1, 3, NULL, nv, NULL, 0, NULL, NULL); //c
+    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, nv, NULL, 0, NULL, NULL);
+    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_bnd1, 3, NULL, nv, NULL, 0, NULL, NULL); //c
 //    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.fac_bnd1, 2, NULL, f1, NULL, 0, NULL, NULL); //u
     
     //read from device
@@ -56,14 +56,13 @@ int main(int argc, const char * argv[])
     ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Jcc.jj, CL_TRUE, 0, 27*1*msh.nv_tot*sizeof(int),   ocl.hst.Jcc.jj, 0, NULL, NULL);
     ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Jcc.vv, CL_TRUE, 0, 27*1*msh.nv_tot*sizeof(float), ocl.hst.Jcc.vv, 0, NULL, NULL);
     
-    
 //    //reset
 //    memset(ocl.hst.U1u, 0, 3*msh.nv_tot*sizeof(float));
 //    memset(ocl.hst.U1c, 0, 1*msh.nv_tot*sizeof(float));
     
 //    //solve
 //    slv_u(&msh, &ocl);
-//    slv_c(&msh, &ocl);
+    slv_c(&msh, &ocl);
     
     //write to device
 //    ocl.err = clEnqueueWriteBuffer(ocl.command_queue, ocl.dev.U1u, CL_TRUE, 0, 3*msh.nv_tot*sizeof(float), ocl.hst.U1u, 0, NULL, NULL);
@@ -98,21 +97,6 @@ int main(int argc, const char * argv[])
     wrt_raw(ocl.hst.U1c, 1*msh.nv_tot, sizeof(float), "U1c");
     wrt_raw(ocl.hst.F1c, 1*msh.nv_tot, sizeof(float), "F1c");
     
-    
-    //name
-    char file_path[250];
-    sprintf(file_path, "%s%s.raw", ROOT_WRITE, "test1");
-
-    //open
-    FILE* file = fopen(file_path,"w");
-  
-    //write
-    fwrite(ocl.hst.U1c, sizeof(float), msh.nv_tot, file);
-    
-    //close
-    fclose(file);
-    
-
     //clean
     ocl_final(&ocl);
     
