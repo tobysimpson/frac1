@@ -130,12 +130,12 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
 void err_nrm(struct msh_obj *msh, struct ocl_obj *ocl)
 {
     float e_sum = 0e0f;
-    float e_max = ocl->hst.ele_ec[0];
+    float e_max = ocl->hst.vtx_ec[0];
     
     //sum
     for(int i=0; i<msh->ne_tot; i++)
     {
-        float e = ocl->hst.ele_ec[i];
+        float e = ocl->hst.vtx_ec[i];
         
         e_sum += e;
         e_max = (e>e_max)?e:e_max;

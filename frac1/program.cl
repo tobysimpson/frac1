@@ -730,6 +730,7 @@ kernel void vtx_bnd1(const int3    vtx_dim,
     return;
 }
 
+/*
 
 //error
 kernel void ele_err1(const int3    ele_dim,
@@ -785,7 +786,7 @@ kernel void ele_err1(const int3    ele_dim,
         float a = prb_a(qp_glb);
         
         //sum
-        e_sum += fabsf(c - a)*qw;
+        e_sum += fabs(c - a)*qw;
     
     } //qpt
     
@@ -795,35 +796,19 @@ kernel void ele_err1(const int3    ele_dim,
     return;
 }
 
+*/
 
-////error norm
-//kernel void vtx_err1(const int3     vtx_dim,
-//                     global float   *U1c,
-//                     global float   *vtx_ee)
-//{
-//    int3 ele_pos  = {get_global_id(0), get_global_id(1), get_global_id(2)};
-//    int ele_idx = fn_idx1(ele_pos, ele_dim);
-//
-//    //    printf("ele_pos %v3d\n", ele_pos);
-//
-//    float vlm = dx.x*dx.y*dx.z;
-//
-//    //read
-//    float uc2[8];
-//    mem_rg2f(U1c, uc2, ele_pos, ele_dim);
-//
-//
-//
-//    float3 mpt = dx*(convert_float3(ele_pos) + 0.5f);
-////    printf("mpt %v3f\n", mpt);
-//
-//    //ana,num
-//    float a = prb_a(mpt);
-//    float c = 0.125f*(uc2[0] + uc2[1] + uc2[2] + uc2[3] + uc2[4] + uc2[5] + uc2[6] + uc2[7]);
-//
-//    //write
-////    ele_ee[ele_idx] = fabs(c - a)*vlm;          //1-norm
-//    ele_ee[ele_idx] = pown((c - a), 2)*vlm;   //2-norm
-//
-//    return;
-//}
+//error
+kernel void vtx_err1(const int3     vtx_dim,
+                     global float   *U1c,
+                     global float   *A1c,
+                     global float   *E1c)
+{
+    int3 vtx_pos  = {get_global_id(0), get_global_id(1), get_global_id(2)};
+    int  vtx_idx = fn_idx1(vtx_pos, vtx_dim);
+
+    //write
+    E1c[vtx_idx] = fabs(A1c[vtx_idx] - U1c[vtx_idx]);
+
+    return;
+}
