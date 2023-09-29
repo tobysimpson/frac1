@@ -332,24 +332,17 @@ float mec_p(float8 E, float4 mat_prm)
  */
 
 //init
-kernel void vtx_init(const int3   vtx_dim,
-                     const float3 x0,
-                     const float3 dx,
+kernel void vtx_init(const  int3    vtx_dim,
+                     const  float3  x0,
+                     const  float3  dx,
                      global float  *vtx_xx,
-                     global float  *U0c,
                      global float  *U1u,
-                     global float  *U1c,
                      global float  *F1u,
+                     global float  *U1c,
                      global float  *F1c,
                      global int    *Juu_ii,
                      global int    *Juu_jj,
                      global float  *Juu_vv,
-                     global int    *Juc_ii,
-                     global int    *Juc_jj,
-                     global float  *Juc_vv,
-                     global int    *Jcu_ii,
-                     global int    *Jcu_jj,
-                     global float  *Jcu_vv,
                      global int    *Jcc_ii,
                      global int    *Jcc_jj,
                      global float  *Jcc_vv)
@@ -366,9 +359,8 @@ kernel void vtx_init(const int3   vtx_dim,
     
     //c
     int idx_c = vtx1_idx1;
-    U0c[idx_c] = prb_a(x);  //ana
-    U1c[idx_c] = 0e0f;
-    F1c[idx_c] = 0e0f;
+    U1c[idx_c] = 1e0f;
+    F1c[idx_c] = 2e0f;
     
     //u
     for(int dim1=0; dim1<3; dim1++)
@@ -397,19 +389,17 @@ kernel void vtx_init(const int3   vtx_dim,
         //dim1
         for(int dim1=0; dim1<3; dim1++)
         {
-            //they are transposes => redundancy if needed
-            
-            //uc
-            int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-            Juc_ii[idx_uc] = vtx2_bnd1*(3*vtx1_idx1 + dim1);
-            Juc_jj[idx_uc] = vtx2_bnd1*(vtx2_idx1);
-            Juc_vv[idx_uc] = 0e0f;
-            
-            //cu
-            int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-            Jcu_ii[idx_cu] = vtx2_bnd1*(vtx1_idx1);
-            Jcu_jj[idx_cu] = vtx2_bnd1*(3*vtx2_idx1  + dim1);
-            Jcu_vv[idx_cu] = 0e0f;
+//            //uc
+//            int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+//            Juc_ii[idx_uc] = vtx2_bnd1*(3*vtx1_idx1 + dim1);
+//            Juc_jj[idx_uc] = vtx2_bnd1*(vtx2_idx1);
+//            Juc_vv[idx_uc] = 0e0f;
+//
+//            //cu
+//            int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+//            Jcu_ii[idx_cu] = vtx2_bnd1*(vtx1_idx1);
+//            Jcu_jj[idx_cu] = vtx2_bnd1*(3*vtx2_idx1  + dim1);
+//            Jcu_vv[idx_cu] = 0e0f;
             
             //dim2
             for(int dim2=0; dim2<3; dim2++)

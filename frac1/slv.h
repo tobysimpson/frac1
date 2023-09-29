@@ -36,21 +36,8 @@ int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
     int num_rows = 3*msh->nv_tot;
     int num_cols = 3*msh->nv_tot;
 
-    //map read
-    int*    ii = clEnqueueMapBuffer(ocl->command_queue, ocl->Juu_ii, CL_TRUE, CL_MAP_READ, 0, blk_num*sizeof(int),   0, NULL, NULL, &ocl->err);
-    int*    jj = clEnqueueMapBuffer(ocl->command_queue, ocl->Juu_jj, CL_TRUE, CL_MAP_READ, 0, blk_num*sizeof(int),   0, NULL, NULL, &ocl->err);
-    float*  vv = clEnqueueMapBuffer(ocl->command_queue, ocl->Juu_vv, CL_TRUE, CL_MAP_READ, 0, blk_num*sizeof(float), 0, NULL, NULL, &ocl->err);
-
     //create
-    SparseMatrix_Float A = SparseConvertFromCoordinate(num_rows, num_cols, blk_num, 1, atts, ii, jj, vv);  //duplicates sum
-    
-    //unmap read
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->Juu_ii, ii, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->Juu_jj, jj, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->Juu_vv, vv, 0, NULL, NULL);
-    
-    //debug
-    printf("nnz=%lu\n", A.structure.columnStarts[A.structure.columnCount]);
+    SparseMatrix_Float A = SparseConvertFromCoordinate(num_rows, num_cols, blk_num, 1, atts, ocl->hst.Juu.ii, ocl->hst.Juu.jj, ocl->hst.Juu.vv);  //duplicates sum
     
     //vecs
     DenseVector_Float u;
@@ -59,8 +46,8 @@ int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
     u.count = 3*msh->nv_tot;
     f.count = 3*msh->nv_tot;
     
-    u.data = ocl->uu;
-    f.data = ocl->fu;
+    u.data = ocl->hst.U1u;
+    f.data = ocl->hst.U1c;
 
     /*
      ========================
@@ -101,18 +88,8 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
     int num_rows = msh->nv_tot;
     int num_cols = msh->nv_tot;
 
-    //map read
-    int*    ii = clEnqueueMapBuffer(ocl->command_queue, ocl->Jcc_ii, CL_TRUE, CL_MAP_READ, 0, blk_num*sizeof(int),   0, NULL, NULL, &ocl->err);
-    int*    jj = clEnqueueMapBuffer(ocl->command_queue, ocl->Jcc_jj, CL_TRUE, CL_MAP_READ, 0, blk_num*sizeof(int),   0, NULL, NULL, &ocl->err);
-    float*  vv = clEnqueueMapBuffer(ocl->command_queue, ocl->Jcc_vv, CL_TRUE, CL_MAP_READ, 0, blk_num*sizeof(float), 0, NULL, NULL, &ocl->err);
-
     //create
-    SparseMatrix_Float A = SparseConvertFromCoordinate(num_rows, num_cols, blk_num, 1, atts, ii, jj, vv);  //duplicates sum
-    
-    //unmap read
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->Jcc_ii, ii, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->Jcc_jj, jj, 0, NULL, NULL);
-    clEnqueueUnmapMemObject(ocl->command_queue, ocl->Jcc_vv, vv, 0, NULL, NULL);
+    SparseMatrix_Float A = SparseConvertFromCoordinate(num_rows, num_cols, blk_num, 1, atts, ocl->hst.Jcc.ii, ocl->hst.Jcc.jj, ocl->hst.Jcc.vv);
     
     //debug
     printf("nnz=%lu\n", A.structure.columnStarts[A.structure.columnCount]);
@@ -124,8 +101,8 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
     u.count = msh->nv_tot;
     f.count = msh->nv_tot;
     
-    u.data = ocl->uc;
-    f.data = ocl->fc;
+    u.data = ocl->hst.U1c;
+    f.data = ocl->hst.F1c;
 
     /*
      ========================
@@ -153,12 +130,12 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
 void err_nrm(struct msh_obj *msh, struct ocl_obj *ocl)
 {
     float e_sum = 0e0f;
-    float e_max = ocl->ec[0];
+    float e_max = ocl->hst.ele_ec[0];
     
     //sum
     for(int i=0; i<msh->ne_tot; i++)
     {
-        float e = ocl->ec[i];
+        float e = ocl->hst.ele_ec[i];
         
         e_sum += e;
         e_max = (e>e_max)?e:e_max;
