@@ -309,6 +309,7 @@ void ocl_final(struct ocl_obj *ocl)
     ocl->err = clReleaseMemObject(ocl->dev.U1c);
     ocl->err = clReleaseMemObject(ocl->dev.F1c);
     ocl->err = clReleaseMemObject(ocl->dev.A1c);
+    ocl->err = clReleaseMemObject(ocl->dev.E1c);
     
     ocl->err = clReleaseMemObject(ocl->dev.Juu.ii);
     ocl->err = clReleaseMemObject(ocl->dev.Juu.jj);
