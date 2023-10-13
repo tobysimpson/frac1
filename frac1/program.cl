@@ -32,6 +32,9 @@ void    bas_eval(float3 p, float ee[8]);
 void    bas_grad(float3 p, float3 gg[8], float3 dx);
 float   bas_itpe(float uu2[8], float bas_ee[8]);
 
+float   prb_a(float3 x);
+float   prb_f(float3 x);
+
 float   sym_tr(float8 A);
 float   sym_det(float8 A);
 float8  sym_vout(float3 v);
@@ -42,9 +45,6 @@ float   sym_tip(float8 A, float8 B);
 float8  mec_E(float3 g[3]);
 float8  mec_S(float8 E, float4 mat_prm);
 float   mec_p(float8 E, float4 mat_prm);
-
-float   prb_a(float3 x);
-float   prb_f(float3 x);
 
 void    mem_rg3f(global float *buf, float uu3[27], int3 pos, int3 dim);
 void    mem_rg2f(global float *buf, float uu2[8], int3 pos, int3 dim);
@@ -586,7 +586,7 @@ kernel void vtx_assm(const int3     vtx_dim,
 }
 
 
-//boundary conditions
+//bc - external surface
 kernel void vtx_bnd1(const int3    vtx_dim,
                      const float3  x0,
                      const float3  dx,
@@ -606,7 +606,7 @@ kernel void vtx_bnd1(const int3    vtx_dim,
 
         float3 x = x0 + dx*convert_float3(vtx1_pos1);
         
-        //c - both for cg
+        //c - (soln and rhs for cg)
         int idx_c = vtx1_idx1;
         U1c[idx_c] = prb_a(x);
         F1c[idx_c] = prb_a(x);
@@ -627,7 +627,7 @@ kernel void vtx_bnd1(const int3    vtx_dim,
 
     //        printf("vtx2_pos1 %+v3d %d\n", vtx2_pos1, vtx2_bnd1);
 
-            //cc
+            //cc - I
             int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
             Jcc_vv[idx_cc] = (vtx1_idx1==vtx2_idx1);
 
@@ -679,8 +679,9 @@ kernel void vtx_err1(const int3     vtx_dim,
 }
 
 
-//boundary conditions - zero dirichlet mech
+//bc - zero dirichlet mech (2D)
 kernel void fac_bnd1(const int3     vtx_dim,
+                     global float  *U1u,
                      global float  *F1u,
                      global float  *Juu_vv)
 {
@@ -692,6 +693,7 @@ kernel void fac_bnd1(const int3     vtx_dim,
     {
         //u
         int idx_u = 3*vtx1_idx1 + dim1;
+        U1u[idx_u] = 0e0f;
         F1u[idx_u] = 0e0f;
     }
 

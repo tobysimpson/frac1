@@ -58,7 +58,7 @@ int slv_u(struct msh_obj *msh, struct ocl_obj *ocl)
     //iterate
 //    SparseSolve(SparseConjugateGradient(), A, f, u);    // SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
     SparseSolve(SparseGMRES(), A, f, u);
-//    SparseSolve(SparseLSMR(), A, f, u);
+//    SparseSolve(SparseLSMR(), A, f, u); //minres - symmetric
     
     //QR
 //    SparseOpaqueFactorization_Float QR = SparseFactor(SparseFactorizationQR, A);       //no
@@ -112,7 +112,7 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
     
     //iterate
     SparseSolve(SparseConjugateGradient(), A, f, u);    //SparsePreconditionerDiagonal/SparsePreconditionerDiagScaling
-//    SparseSolve(SparseGMRES(), A, f, u);
+    SparseSolve(SparseGMRES(), A, f, u);
 //    SparseSolve(SparseLSMR(), A, f, u);
     
     //QR
