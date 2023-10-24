@@ -435,7 +435,11 @@ kernel void vtx_assm(const int3     vtx_dim,
                      global float  *F1u,
                      global float  *U1c,
                      global float  *F1c,
+                     global int    *Juu_ii,
+                     global int    *Juu_jj,
                      global float  *Juu_vv,
+                     global int    *Jcc_ii,
+                     global int    *Jcc_jj,
                      global float  *Jcc_vv)
 {
     int3 ele_dim = vtx_dim - 1;
