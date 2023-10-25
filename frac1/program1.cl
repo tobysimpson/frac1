@@ -45,8 +45,8 @@ void    mem_r3f3(global float *buf, float3 uu3[27], int3 pos, int3 dim);
 void    mem_r2f3(float3 uu3[27], float3 uu2[8], int3 pos);
 
 float   sym_tr(float8 A);
-float8  sym_vout(float3 v);
-float8  sym_prod(float8 A, float8 B);
+float8  sym_vv(float3 v);
+float8  sym_mm(float8 A, float8 B);
 float   sym_det(float8 A);
 float   sym_tip(float8 A, float8 B);
 
@@ -268,13 +268,13 @@ float sym_tr(float8 A)
 }
 
 //outer product vv^T
-float8 sym_vout(float3 v)
+float8 sym_vv(float3 v)
 {
     return (float8){v.x*v.x, v.x*v.y, v.x*v.z, v.y*v.y, v.y*v.z, v.z*v.z, 0e0f, 0e0f};
 }
 
 //sym prod
-float8 sym_prod(float8 A, float8 B)
+float8 sym_mm(float8 A, float8 B)
 {
     return (float8){A.s0*B.s0 + A.s1*B.s1 + A.s2*B.s2,
                     A.s0*B.s1 + A.s1*B.s3 + A.s2*B.s4,
@@ -320,7 +320,7 @@ float8 mec_S(float8 E)
 //energy phi = 0.5*lam*(tr(E))^2 + mu*tr(E^2)
 float mec_p(float8 E)
 {
-    return 5e-1f*mat_lam*pown(sym_tr(E),2) + mat_mu*sym_tr(sym_prod(E,E));
+    return 5e-1f*mat_lam*pown(sym_tr(E),2) + mat_mu*sym_tr(sym_mm(E,E));
 }
 
 /*
@@ -386,13 +386,13 @@ void eig_A1A2(float8 A, float8 *A1, float8 *A2)
     *A2 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
     
     //outer, sum
-    *A1 += sym_vout(vv[0])*(dd.x>+0e0f)*dd.x;
-    *A1 += sym_vout(vv[1])*(dd.y>+0e0f)*dd.y;
-    *A1 += sym_vout(vv[2])*(dd.z>+0e0f)*dd.z;
+    *A1 += sym_vv(vv[0])*(dd.x>+0e0f)*dd.x;
+    *A1 += sym_vv(vv[1])*(dd.y>+0e0f)*dd.y;
+    *A1 += sym_vv(vv[2])*(dd.z>+0e0f)*dd.z;
     
-    *A2 += sym_vout(vv[0])*(dd.x<-0e0f)*dd.x;
-    *A2 += sym_vout(vv[1])*(dd.y<-0e0f)*dd.y;
-    *A2 += sym_vout(vv[2])*(dd.z<-0e0f)*dd.z;
+    *A2 += sym_vv(vv[0])*(dd.x<-0e0f)*dd.x;
+    *A2 += sym_vv(vv[1])*(dd.y<-0e0f)*dd.y;
+    *A2 += sym_vv(vv[2])*(dd.z<-0e0f)*dd.z;
 
     return;
 }
@@ -422,8 +422,8 @@ void eig_E1E2(float3 g, int dim, float8 *E1, float8 *E2)
     v1[2] = normalize((float3){-g.x*g1.z, -g.y*g1.z, g.x*g.x + g.y*g.y});
     
     //select
-    *E1 = sym_vout(v0[dim])*(d0[dim]>0e0f)*d0[dim] + sym_vout(v1[dim])*(d1[dim]>0e0f)*d1[dim];
-    *E2 = sym_vout(v0[dim])*(d0[dim]<0e0f)*d0[dim] + sym_vout(v1[dim])*(d1[dim]<0e0f)*d1[dim];
+    *E1 = sym_vv(v0[dim])*(d0[dim]>0e0f)*d0[dim] + sym_vv(v1[dim])*(d1[dim]>0e0f)*d1[dim];
+    *E2 = sym_vv(v0[dim])*(d0[dim]<0e0f)*d0[dim] + sym_vv(v1[dim])*(d1[dim]<0e0f)*d1[dim];
     
     return;
 }

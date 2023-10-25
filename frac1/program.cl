@@ -37,18 +37,23 @@ float   prb_f(float3 x);
 
 float   sym_tr(float8 A);
 float   sym_det(float8 A);
-float8  sym_vout(float3 v);
-float3  sym_vmul(float8 A, float3 v);
-float8  sym_mmul(float8 A, float8 B);
+float8  sym_vv(float3 v);
+float3  sym_mv(float8 A, float3 v);
+float8  sym_mm(float8 A, float8 B);
 float   sym_tip(float8 A, float8 B);
 
 float8  mec_E(float3 g[3]);
 float8  mec_S(float8 E, float4 prm_mat);
 float   mec_p(float8 E, float4 prm_mat);
 
-void    mem_rg3f(global float *buf, float uu3[27], int3 pos, int3 dim);
-void    mem_rg2f(global float *buf, float uu2[8], int3 pos, int3 dim);
-void    mem_rl2f(float uu3[27], float uu2[8], int3 pos);
+void    mem_gr3f(global float *buf, float uu3[27], int3 pos, int3 dim);
+void    mem_gr2f(global float *buf, float uu2[8], int3 pos, int3 dim);
+void    mem_lr2f(float uu3[27], float uu2[8], int3 pos);
+
+float3  eig_val(float8 A);
+void    eig_vec(float8 A, float3 dd, float3 vv[3]);
+void    eig_A1A2(float8 A, float8 *A1, float8 *A2);
+void    eig_E1E2(float3 g, int dim, float8 *E1, float8 *E2);
 
 /*
  ===================================
@@ -210,8 +215,8 @@ float bas_itpe(float uu2[8], float bas_ee[8])
  ===================================
  */
 
-//read 3x3x3 from global
-void mem_rg3f(global float *buf, float uu3[27], int3 pos, int3 dim)
+//global read 3x3x3 float
+void mem_gr3f(global float *buf, float uu3[27], int3 pos, int3 dim)
 {
     for(int i=0; i<27; i++)
     {
@@ -224,8 +229,8 @@ void mem_rg3f(global float *buf, float uu3[27], int3 pos, int3 dim)
     return;
 }
 
-//read 2x2x2 from global
-void mem_rg2f(global float *buf, float uu2[8], int3 pos, int3 dim)
+//global read 2x2x2 float
+void mem_gr2f(global float *buf, float uu2[8], int3 pos, int3 dim)
 {
     for(int i=0; i<8; i++)
     {
@@ -238,8 +243,8 @@ void mem_rg2f(global float *buf, float uu2[8], int3 pos, int3 dim)
     return;
 }
 
-//read 2x2x2 from 3x3x3
-void mem_rl2f(float uu3[27], float uu2[8], int3 pos)
+//local read 2x2x2 from 3x3x3
+void mem_lr2f(float uu3[27], float uu2[8], int3 pos)
 {
     for(int i=0; i<8; i++)
     {
@@ -271,20 +276,20 @@ float sym_det(float8 A)
 }
 
 //outer product vv^T
-float8 sym_vout(float3 v)
+float8 sym_vv(float3 v)
 {
     return (float8){v.x*v.x, v.x*v.y, v.x*v.z, v.y*v.y, v.y*v.z, v.z*v.z, 0e0f, 0e0f};
 }
 
 //sym Av
-float3 sym_vmul(float8 A, float3 v)
+float3 sym_mv(float8 A, float3 v)
 {
     return (float3){dot(A.s012,v), dot(A.s134,v), dot(A.s245,v)};
 }
 
 
 //sym AB
-float8 sym_mmul(float8 A, float8 B)
+float8 sym_mm(float8 A, float8 B)
 {
     return (float8){A.s0*B.s0 + A.s1*B.s1 + A.s2*B.s2,
                     A.s0*B.s1 + A.s1*B.s3 + A.s2*B.s4,
@@ -324,8 +329,115 @@ float8 mec_S(float8 E, float4 prm_mat)
 //energy phi = 0.5*lam*(tr(E))^2 + mu*tr(E^2)
 float mec_p(float8 E, float4 prm_mat)
 {
-    return 5e-1f*prm_mat.z*pown(sym_tr(E),2) + prm_mat.w*sym_tr(sym_mmul(E,E));
+    return 5e-1f*prm_mat.z*pown(sym_tr(E),2) + prm_mat.w*sym_tr(sym_mm(E,E));
 }
+
+/*
+ ===================================
+ eigs (sym 3x3)
+ ===================================
+ */
+
+//eigenvalues - Deledalle2017
+float3 eig_val(float8 A)
+{
+    //weird layout
+    float a = A.s0;
+    float b = A.s3;
+    float c = A.s5;
+    float d = A.s1;
+    float e = A.s4;
+    float f = A.s2;
+    
+    float x1 = a*a + b*b + c*c - a*b - a*c - b*c + 3e0f*(d*d + e*e + f*f);
+    float x2 = -(2e0f*a - b - c)*(2e0f*b - a - c)*(2e0f*c - a - b) + 9e0f*(2e0f*c - a - b)*d*d + (2e0f*b - a - c)*f*f + (2e0f*a - b - c)*e*e - 5.4e1f*d*e*f;
+    
+    float p1 = atan(sqrt(4e0f*x1*x1*x1 - x2*x2)/x2);
+    
+    //logic
+    float phi = 5e-1f*M_PI_F;
+    phi = (x2>0e0f)?p1         :phi;       //x2>0
+    phi = (x2<0e0f)?p1 + M_PI_F:phi;       //x2<0
+ 
+    float3 dd;
+    dd.x = (a + b + c - 2e0f*sqrt(x1)*cos((phi         )/3e0f))/3e0f;
+    dd.y = (a + b + c + 2e0f*sqrt(x1)*cos((phi - M_PI_F)/3e0f))/3e0f;
+    dd.z = (a + b + c + 2e0f*sqrt(x1)*cos((phi + M_PI_F)/3e0f))/3e0f;
+    
+    return dd;
+}
+
+
+//eigenvectors - Kopp2008
+void eig_vec(float8 A, float3 dd, float3 vv[3])
+{
+    //cross, normalise, skip when lam=0
+    vv[0] = normalize(cross((float3){A.s0-dd.x, A.s1, A.s2},(float3){A.s1, A.s3-dd.x, A.s4}))*(dd.x!=0e0f);
+    vv[1] = normalize(cross((float3){A.s0-dd.y, A.s1, A.s2},(float3){A.s1, A.s3-dd.y, A.s4}))*(dd.y!=0e0f);
+    vv[2] = normalize(cross((float3){A.s0-dd.z, A.s1, A.s2},(float3){A.s1, A.s3-dd.z, A.s4}))*(dd.z!=0e0f);
+
+    return;
+}
+
+
+//split
+void eig_A1A2(float8 A, float8 *A1, float8 *A2)
+{
+    //vals, vecs
+    float3 dd;
+    float3 vv[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
+    
+    //calc
+    dd = eig_val(A);
+    eig_vec(A, dd, vv);
+    
+    *A1 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+    *A2 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+    
+    //outer, sum
+    *A1 += sym_vv(vv[0])*(dd.x>+0e0f)*dd.x;
+    *A1 += sym_vv(vv[1])*(dd.y>+0e0f)*dd.y;
+    *A1 += sym_vv(vv[2])*(dd.z>+0e0f)*dd.z;
+    
+    *A2 += sym_vv(vv[0])*(dd.x<-0e0f)*dd.x;
+    *A2 += sym_vv(vv[1])*(dd.y<-0e0f)*dd.y;
+    *A2 += sym_vv(vv[2])*(dd.z<-0e0f)*dd.z;
+
+    return;
+}
+
+
+//split direct from basis gradient and dim
+void eig_E1E2(float3 g, int dim, float8 *E1, float8 *E2)
+{
+    float nrm = length(g);
+    
+    float3 g1 = 5e-1f*(g-nrm);
+    float3 g2 = 5e-1f*(g+nrm);
+    
+    //vals (d2 is always zero)
+    float d0[3] = {g1.x, g1.y, g1.z};
+    float d1[3] = {g2.x, g2.y, g2.z};
+    
+    //vecs
+    float3 v0[3];
+    v0[0] = normalize((float3){g1.x, g.y, g.z});
+    v0[1] = normalize((float3){g.x, g1.y, g.z});
+    v0[2] = normalize((float3){-g.x*g2.z, -g.y*g2.z, g.x*g.x + g.y*g.y});
+    
+    float3 v1[3];
+    v1[0] = normalize((float3){g2.x, g.y, g.z});
+    v1[1] = normalize((float3){g.x, g2.y, g.z});
+    v1[2] = normalize((float3){-g.x*g1.z, -g.y*g1.z, g.x*g.x + g.y*g.y});
+    
+    //select
+    *E1 = sym_vv(v0[dim])*(d0[dim]>0e0f)*d0[dim] + sym_vv(v1[dim])*(d1[dim]>0e0f)*d1[dim];
+    *E2 = sym_vv(v0[dim])*(d0[dim]<0e0f)*d0[dim] + sym_vv(v1[dim])*(d1[dim]<0e0f)*d1[dim];
+    
+    return;
+}
+
+
 
 /*
  ===================================
