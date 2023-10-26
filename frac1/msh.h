@@ -19,7 +19,7 @@ struct msh_obj
     cl_float3   x1;
     cl_float3   dx;
     
-    cl_float4   prm_mat;
+    cl_float4   mat_prm;
     
     int         ne_tot;     //totals
     int         nv_tot;
@@ -49,12 +49,12 @@ void msh_init(struct msh_obj *msh)
     printf("dx %+e %+e %+e\n", msh->dx.x, msh->dx.y, msh->dx.z);
     
     //material
-    msh->prm_mat.x = 2e-1f;                                                                                 //youngs    E
-    msh->prm_mat.y = 0.25f;                                                                                 //poisson   v
-    msh->prm_mat.z = (msh->prm_mat.x*msh->prm_mat.y)/((1e0f+msh->prm_mat.y)*(1e0f-2e0f*msh->prm_mat.y));    //lamé      lambda
-    msh->prm_mat.w = msh->prm_mat.x/(2e0f*(1e0f+msh->prm_mat.y));                                           //lamé      mu
+    msh->mat_prm.x = 2e-1f;                                                                                 //youngs    E
+    msh->mat_prm.y = 0.25f;                                                                                 //poisson   v
+    msh->mat_prm.z = (msh->mat_prm.x*msh->mat_prm.y)/((1e0f+msh->mat_prm.y)*(1e0f-2e0f*msh->mat_prm.y));    //lamé      lambda
+    msh->mat_prm.w = msh->mat_prm.x/(2e0f*(1e0f+msh->mat_prm.y));                                           //lamé      mu
     
-    printf("mat_prm %e %e %e %e\n", msh->prm_mat.x, msh->prm_mat.y, msh->prm_mat.z, msh->prm_mat.w);
+    printf("mat_prm %e %e %e %e\n", msh->mat_prm.x, msh->mat_prm.y, msh->mat_prm.z, msh->mat_prm.w);
     
     //totals
     msh->ne_tot = msh->ele_dim.x*msh->ele_dim.y*msh->ele_dim.z;
