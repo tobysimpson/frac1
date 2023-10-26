@@ -36,6 +36,11 @@ void    bas_itpg(float3 uu2[8], float3 bas_gg[8], float3 u_grad[3]);
 float   prb_a(float3 x);
 float   prb_f(float3 x);
 
+float3  mtx_mv(float3 A[3], float3 v);
+void    mtx_mm(float3 A[3], float3 B[3], float3 C[3]);
+void    mtx_mmT(float3 A[3], float3 B[3], float3 C[3]);
+void    mtx_mdmT(float3 A[3], float D[3], float3 B[3], float3 C[3]);
+
 float   sym_tr(float8 A);
 float   sym_det(float8 A);
 float8  sym_vv(float3 v);
@@ -55,7 +60,8 @@ void    mem_lr2f3(float3 uu3[27], float3 uu2[8], int3 pos);
 
 void    eig_val(float8 A, float dd[3]);
 void    eig_vec(float8 A, float dd[3], float3 vv[3]);
-void    eig_dcp(float8 A, float dd[3], float3 vv[3]);
+void    eig_dcm(float8 A, float dd[3], float3 vv[3]);
+void    eig_drv(float3 dA[3], float dd[3], float3 vv[3]);
 
 
 /*
@@ -297,6 +303,49 @@ void mem_lr2f3(float3 uu3[27], float3 uu2[8], int3 pos)
     return;
 }
 
+
+/*
+ ===================================
+ matrix R^3x3
+ ===================================
+ */
+
+//mmult Av
+float3 mtx_mv(float3 A[3], float3 v)
+{
+    return A[0]*v.x + A[1]*v.y + A[2]*v.z;
+}
+
+//mmult C = AB
+void mtx_mm(float3 A[3], float3 B[3], float3 C[3])
+{
+    C[0] = A[0]*B[0].x + A[1]*B[0].y + A[2]*B[0].z;
+    C[1] = A[0]*B[1].x + A[1]*B[1].y + A[2]*B[1].z;
+    C[2] = A[0]*B[2].x + A[1]*B[2].y + A[2]*B[2].z;
+
+    return;
+}
+
+//mmult C = AB^T
+void mtx_mmT(float3 A[3], float3 B[3], float3 C[3])
+{
+    C[0] = A[0]*B[0].x + A[1]*B[1].x + A[2]*B[2].x;
+    C[1] = A[0]*B[0].y + A[1]*B[1].y + A[2]*B[2].y;
+    C[2] = A[0]*B[0].z + A[1]*B[1].z + A[2]*B[2].z;
+
+    return;
+}
+
+//mmult C = ADB^T, diagonal D
+void mtx_mdmT(float3 A[3], float D[3], float3 B[3], float3 C[3])
+{
+    C[0] = D[0]*A[0]*B[0].x + D[1]*A[1]*B[1].x + D[2]*A[2]*B[2].x;
+    C[1] = D[0]*A[0]*B[0].y + D[1]*A[1]*B[1].y + D[2]*A[2]*B[2].y;
+    C[2] = D[0]*A[0]*B[0].z + D[1]*A[1]*B[1].z + D[2]*A[2]*B[2].z;
+
+    return;
+}
+
 /*
  ===================================
  symmetric R^3x3
@@ -321,14 +370,13 @@ float8 sym_vv(float3 v)
     return (float8){v.x*v.x, v.x*v.y, v.x*v.z, v.y*v.y, v.y*v.z, v.z*v.z, 0e0f, 0e0f};
 }
 
-//sym Av
+//sym mtx-vec
 float3 sym_mv(float8 A, float3 v)
 {
     return (float3){dot(A.s012,v), dot(A.s134,v), dot(A.s245,v)};
 }
 
-
-//sym AB
+//sym mtx-mtx
 float8 sym_mm(float8 A, float8 B)
 {
     return (float8){A.s0*B.s0 + A.s1*B.s1 + A.s2*B.s2,
@@ -421,10 +469,43 @@ void eig_vec(float8 A, float dd[3], float3 vv[3])
 
 
 //eigen decomposition
-void eig_dcp(float8 A, float dd[3], float3 vv[3])
+void eig_dcm(float8 A, float dd[3], float3 vv[3])
 {
     eig_val(A, dd);
     eig_vec(A, dd, vv);
+    
+    return;
+}
+
+//derivative of A in direction of dA where A = VDV^T, dA arrives transposed!!
+void eig_drv(float3 dA[3], float dd[3], float3 vv[3])
+{
+    //L = (A - lam_i*I)
+    
+    //derivs, per eig
+    float  dl[3];
+    float3 dv[3];
+    
+    //loop eigs
+    for(int i=0; i<3; i++)
+    {
+        //D inverse
+        float  D[3];
+        D[0] = (dd[0]==dd[i])?0e0f:1e0f/(dd[0]-dd[i]);
+        D[1] = (dd[1]==dd[i])?0e0f:1e0f/(dd[1]-dd[i]);
+        D[2] = (dd[2]==dd[i])?0e0f:1e0f/(dd[2]-dd[i]);
+        
+        //L inverse
+        float3 L[3];
+        mtx_mdmT(vv,D,vv,L);
+        
+        float3 LdA[3];
+        mtx_mmT(L, dA, LdA); //because dA arrives as rows
+        
+        dv[i] = -mtx_mv(LdA, vv[i]);
+        
+        
+    }//i
     
     return;
 }
@@ -566,18 +647,12 @@ kernel void vtx_assm(const int3     vtx_dim,
         int3 ele1_pos1 = vtx1_pos1 + ele1_pos2 - 1;
         int  ele1_bnd1 = fn_bnd1(ele1_pos1, ele_dim);
         
-//        printf(" ele1 %+v3d %d\n", ele1_pos1, ele1_bnd1);
-        
         //ref vtx (decrement to avoid bug)
         vtx1_idx2 -= 1;
         
         //in-bounds
         if(ele1_bnd1)
         {
-//            printf(" ele1 %+v3d\n", ele1_pos1 - 1);
-//            printf("ele1 %d %d\n", ele1_idx2, vtx1_idx2);
-//            printf("ele1 %d %+v3d %d %d\n", ele1_idx2, ele1_pos1, ele1_bnd1, vtx1_idx2);
-            
             //read
             float3 uu2[8];
             mem_lr2f3(uu3, uu2, ele1_pos2);
@@ -599,14 +674,12 @@ kernel void vtx_assm(const int3     vtx_dim,
                 
                 //qp global
                 float3 qp_glb = x0 + dx*(convert_float3(ele1_pos1) + qp);
-//                printf("  qp_glb %v3f\n", qp_glb);
                 
                 //basis
                 float  bas_ee[8];
                 float3 bas_gg[8];
                 bas_eval(qp, bas_ee);
                 bas_grad(qp, bas_gg, dx);
-//                printf("bas %d %+v3f\n", vtx1_idx2, bas_gg[vtx1_idx2]);
                 
                 //interp
                 float3 du[3] = {{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f}};
@@ -617,6 +690,13 @@ kernel void vtx_assm(const int3     vtx_dim,
                 
                 //test trace tr(e(u)) > 0 for later
                 float trEh = (sym_tr(Eh)>0e0f);
+                
+                //decompose Eh
+                float  dd[3];
+                float3 vv[3];
+                eig_dcm(Eh, dd, vv);
+                
+                
                 
                 
                 //rhs c
@@ -640,8 +720,6 @@ kernel void vtx_assm(const int3     vtx_dim,
                     int3 vtx2_pos3 = ele1_pos2 + off2[vtx2_idx2];
                     int  vtx2_idx3 = fn_idx3(vtx2_pos3);
                     
-//                    printf("vtx2 %v3d %d\n", vtx2_pos3, vtx2_idx3);
-                    
                     //dots
 //                    float dot_e = bas_ee[vtx1_idx2]*bas_ee[vtx2_idx2];
                     float dot_g = dot(bas_gg[vtx1_idx2], bas_gg[vtx2_idx2]);
@@ -653,10 +731,8 @@ kernel void vtx_assm(const int3     vtx_dim,
                     //dim1
                     for(int dim1=0; dim1<3; dim1++)
                     {
-                        //def grad
-                        float3 du1[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
-
                         //tensor basis
+                        float3 du1[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
                         du1[dim1] = bas_gg[vtx1_idx2];
 
                         //strain
@@ -666,10 +742,8 @@ kernel void vtx_assm(const int3     vtx_dim,
                         //dim2
                         for(int dim2=0; dim2<3; dim2++)
                         {
-                            //def grad
-                            float3 du2[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
-
                             //tensor basis
+                            float3 du2[3] = {{0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}, {0e0f, 0e0f, 0e0f}};
                             du2[dim2] = bas_gg[vtx2_idx2];
                             
                             //strain
