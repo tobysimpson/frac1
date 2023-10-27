@@ -40,6 +40,7 @@ float3  mtx_mv(float3 A[3], float3 v);
 void    mtx_mm(float3 A[3], float3 B[3], float3 C[3]);
 void    mtx_mmT(float3 A[3], float3 B[3], float3 C[3]);
 void    mtx_mdmT(float3 A[3], float D[3], float3 B[3], float3 C[3]);
+void    mtx_sum(float3 A[3], float3 B[3], float3 C[3]);
 
 float   sym_tr(float8 A);
 float   sym_det(float8 A);
@@ -319,9 +320,9 @@ float3 mtx_mv(float3 A[3], float3 v)
 //mmult C = AB
 void mtx_mm(float3 A[3], float3 B[3], float3 C[3])
 {
-    C[0] = A[0]*B[0].x + A[1]*B[0].y + A[2]*B[0].z;
-    C[1] = A[0]*B[1].x + A[1]*B[1].y + A[2]*B[1].z;
-    C[2] = A[0]*B[2].x + A[1]*B[2].y + A[2]*B[2].z;
+    C[0] = mtx_mv(A,B[0]);
+    C[1] = mtx_mv(A,B[1]);
+    C[2] = mtx_mv(A,B[2]);
 
     return;
 }
@@ -344,6 +345,14 @@ void mtx_mdmT(float3 A[3], float D[3], float3 B[3], float3 C[3])
     C[2] = D[0]*A[0]*B[0].z + D[1]*A[1]*B[1].z + D[2]*A[2]*B[2].z;
 
     return;
+}
+
+//sum
+void mtx_sum(float3 A[3], float3 B[3], float3 C[3])
+{
+    C[0] = A[0] + B[0];
+    C[1] = A[1] + B[1];
+    C[2] = A[2] + B[2];
 }
 
 /*
@@ -427,7 +436,7 @@ float mec_p(float8 E, float4 mat_prm)
  */
 
 //eigenvalues (real symm) - Deledalle2017
-void eig_val(float8 A, float dd[3])
+void eig_val(float8 A, float D[3])
 {
     //weird layout
     float a = A.s0;
@@ -448,62 +457,71 @@ void eig_val(float8 A, float dd[3])
     phi = (x2<0e0f)?p1 + M_PI_F:phi;       //x2<0
  
     //write
-    dd[0] = (a + b + c - 2e0f*sqrt(x1)*cos((phi         )/3e0f))/3e0f;
-    dd[1] = (a + b + c + 2e0f*sqrt(x1)*cos((phi - M_PI_F)/3e0f))/3e0f;
-    dd[2] = (a + b + c + 2e0f*sqrt(x1)*cos((phi + M_PI_F)/3e0f))/3e0f;
+    D[0] = (a + b + c - 2e0f*sqrt(x1)*cos((phi         )/3e0f))/3e0f;
+    D[1] = (a + b + c + 2e0f*sqrt(x1)*cos((phi - M_PI_F)/3e0f))/3e0f;
+    D[2] = (a + b + c + 2e0f*sqrt(x1)*cos((phi + M_PI_F)/3e0f))/3e0f;
     
     return;
 }
 
 
 //eigenvectors (real symm) - Kopp2008
-void eig_vec(float8 A, float dd[3], float3 vv[3])
+void eig_vec(float8 A, float D[3], float3 V[3])
 {
     //cross, normalise, skip when lam=0
-    vv[0] = normalize(cross((float3){A.s0-dd[0], A.s1, A.s2},(float3){A.s1, A.s3-dd[0], A.s4}))*(dd[0]!=0e0f);
-    vv[1] = normalize(cross((float3){A.s0-dd[1], A.s1, A.s2},(float3){A.s1, A.s3-dd[1], A.s4}))*(dd[1]!=0e0f);
-    vv[2] = normalize(cross((float3){A.s0-dd[2], A.s1, A.s2},(float3){A.s1, A.s3-dd[2], A.s4}))*(dd[2]!=0e0f);
+    V[0] = normalize(cross((float3){A.s0-D[0], A.s1, A.s2},(float3){A.s1, A.s3-D[0], A.s4}))*(D[0]!=0e0f);
+    V[1] = normalize(cross((float3){A.s0-D[1], A.s1, A.s2},(float3){A.s1, A.s3-D[1], A.s4}))*(D[1]!=0e0f);
+    V[2] = normalize(cross((float3){A.s0-D[2], A.s1, A.s2},(float3){A.s1, A.s3-D[2], A.s4}))*(D[2]!=0e0f);
 
     return;
 }
 
 
 //eigen decomposition
-void eig_dcm(float8 A, float dd[3], float3 vv[3])
+void eig_dcm(float8 A, float D[3], float3 V[3])
 {
-    eig_val(A, dd);
-    eig_vec(A, dd, vv);
+    eig_val(A, D);
+    eig_vec(A, D, V);
     
     return;
 }
 
-//derivative of A in direction of dA where A = VDV^T, dA arrives transposed!!
-void eig_drv(float3 dA[3], float dd[3], float3 vv[3])
+//derivative of A in direction of dA where A = VDV^T, Jodlbauer2020, dA arrives transposed
+void eig_drv(float3 dA[3], float D[3], float3 V[3])
 {
     //L = (A - lam_i*I)
     
     //derivs, per eig
-    float  dl[3];
-    float3 dv[3];
+    float  dD[3];
+    float3 dV[3];
+    
+    //split
+    float dD_pos[3];
+    float dD_neg[3];
     
     //loop eigs
     for(int i=0; i<3; i++)
     {
         //D inverse
         float  D[3];
-        D[0] = (dd[0]==dd[i])?0e0f:1e0f/(dd[0]-dd[i]);
-        D[1] = (dd[1]==dd[i])?0e0f:1e0f/(dd[1]-dd[i]);
-        D[2] = (dd[2]==dd[i])?0e0f:1e0f/(dd[2]-dd[i]);
+        D[0] = (D[0]==D[i])?0e0f:1e0f/(D[0]-D[i]);
+        D[1] = (D[1]==D[i])?0e0f:1e0f/(D[1]-D[i]);
+        D[2] = (D[2]==D[i])?0e0f:1e0f/(D[2]-D[i]);
         
         //L inverse
         float3 L[3];
-        mtx_mdmT(vv,D,vv,L);
+        mtx_mdmT(V,D,V,L);
         
         float3 LdA[3];
         mtx_mmT(L, dA, LdA); //because dA arrives as rows
         
-        dv[i] = -mtx_mv(LdA, vv[i]);
+        //derivs
+        dV[i] = -mtx_mv(LdA, V[i]);
+        dD[i] = dot(V[i], mtx_mv(dA, V[i]));
         
+        //split
+        dD_pos[i] = (D[i]>0e0f)?dD[i]:0e0f;
+        dD_neg[i] = (D[i]<0e0f)?dD[i]:0e0f;
         
     }//i
     
@@ -692,9 +710,9 @@ kernel void vtx_assm(const int3     vtx_dim,
                 float trEh = (sym_tr(Eh)>0e0f);
                 
                 //decompose Eh
-                float  dd[3];
-                float3 vv[3];
-                eig_dcm(Eh, dd, vv);
+                float  D[3];
+                float3 V[3];
+                eig_dcm(Eh, D, V);
                 
                 
                 
