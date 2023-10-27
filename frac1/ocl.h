@@ -8,9 +8,7 @@
 #ifndef ocl_h
 #define ocl_h
 
-
 #define ROOT_PRG    "/Users/toby/Documents/USI/postdoc/fracture/xcode/frac1/frac1"
-
 
 struct coo_dev
 {
@@ -88,6 +86,8 @@ struct ocl_obj
 //init
 void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
 {
+    printf("__FILE__: %s\n", __FILE__);
+    
     /*
      =============================
      environment

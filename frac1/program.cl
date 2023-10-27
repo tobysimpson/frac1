@@ -44,9 +44,11 @@ void    mtx_sum(float3 A[3], float3 B[3], float3 C[3]);
 
 float   sym_tr(float8 A);
 float   sym_det(float8 A);
-float8  sym_vv(float3 v);
+float8  sym_vvT(float3 v);
 float3  sym_mv(float8 A, float3 v);
 float8  sym_mm(float8 A, float8 B);
+float8  sym_mdmT(float3 A[3], float D[3]);
+float8  sym_sumT(float3 A[3]);
 float   sym_tip(float8 A, float8 B);
 
 float8  mec_E(float3 g[3]);
@@ -62,7 +64,7 @@ void    mem_lr2f3(float3 uu3[27], float3 uu2[8], int3 pos);
 void    eig_val(float8 A, float dd[3]);
 void    eig_vec(float8 A, float dd[3], float3 vv[3]);
 void    eig_dcm(float8 A, float dd[3], float3 vv[3]);
-void    eig_drv(float3 dA[3], float dd[3], float3 vv[3]);
+void    eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2);
 
 
 /*
@@ -370,11 +372,12 @@ float sym_tr(float8 A)
 //sym determinant
 float sym_det(float8 A)
 {
-    return A.s0*A.s3*A.s5 - (A.s0*A.s4*A.s4 + A.s2*A.s2*A.s3 + A.s1*A.s1*A.s5) + 2e0f*A.s1*A.s2*A.s4;
+    return dot((float3){A.s0,A.s1,A.s2}, cross((float3){A.s1, A.s3, A.s4}, (float3){A.s2, A.s4, A.s5}));
+//    return A.s0*A.s3*A.s5 - (A.s0*A.s4*A.s4 + A.s2*A.s2*A.s3 + A.s1*A.s1*A.s5) + 2e0f*A.s1*A.s2*A.s4;
 }
 
 //outer product vv^T
-float8 sym_vv(float3 v)
+float8 sym_vvT(float3 v)
 {
     return (float8){v.x*v.x, v.x*v.y, v.x*v.z, v.y*v.y, v.y*v.z, v.z*v.z, 0e0f, 0e0f};
 }
@@ -396,6 +399,38 @@ float8 sym_mm(float8 A, float8 B)
                     A.s2*B.s2 + A.s4*B.s4 + A.s5*B.s5, 0e0f, 0e0f};
 }
 
+//mul A = VDV^T, diagonal D
+float8  sym_mdmT(float3 V[3], float D[3])
+{
+    float8 A;
+    
+    A.s0 = D[0]*V[0].x*V[0].x + D[1]*V[1].x*V[1].x + D[2]*V[2].x*V[2].x;
+    A.s1 = D[0]*V[0].x*V[0].y + D[1]*V[1].x*V[1].y + D[2]*V[2].x*V[2].y;
+    A.s2 = D[0]*V[0].x*V[0].z + D[1]*V[1].x*V[1].z + D[2]*V[2].x*V[2].z;
+    A.s3 = D[0]*V[0].y*V[0].y + D[1]*V[1].y*V[1].y + D[2]*V[2].y*V[2].y;
+    A.s4 = D[0]*V[0].y*V[0].z + D[1]*V[1].y*V[1].z + D[2]*V[2].y*V[2].z;
+    A.s5 = D[0]*V[0].z*V[0].z + D[1]*V[1].z*V[1].z + D[2]*V[2].z*V[2].z;
+    A.s6 = 0e0f;
+    A.s7 = 0e0f;
+    
+    return A;
+}
+
+//sum S = A+A^T
+float8 sym_sumT(float3 A[3])
+{
+    float8 S;
+    
+    S.s0 = A[0].x + A[0].x;
+    S.s1 = A[1].x + A[0].y;
+    S.s2 = A[2].x + A[0].z;
+    S.s3 = A[1].y + A[1].y;
+    S.s4 = A[2].y + A[1].z;
+    S.s5 = A[2].z + A[2].z;
+    
+    return S;
+}
+
 //sym tensor inner prod
 float sym_tip(float8 A, float8 B)
 {
@@ -411,7 +446,7 @@ float sym_tip(float8 A, float8 B)
 //strain (du + du^T)/2
 float8 mec_E(float3 du[3])
 {
-    return (float8){du[0].x, 5e-1f*(du[0].y + du[1].x), 5e-1f*(du[0].z + du[2].x), du[1].y,  5e-1f*(du[1].z + du[2].y), du[2].z, 0e0f, 0e0f};
+    return 5e-1f*sym_sumT(du);
 }
 
 //stress pk2 = lam*tr(e)*I + 2*mu*e
@@ -435,7 +470,7 @@ float mec_p(float8 E, float4 mat_prm)
  ===================================
  */
 
-//eigenvalues (real symm) - Deledalle2017
+//eigenvalues (A real symm) - Deledalle2017
 void eig_val(float8 A, float D[3])
 {
     //weird layout
@@ -465,7 +500,7 @@ void eig_val(float8 A, float D[3])
 }
 
 
-//eigenvectors (real symm) - Kopp2008
+//eigenvectors (A real symm) - Kopp2008
 void eig_vec(float8 A, float D[3], float3 V[3])
 {
     //cross, normalise, skip when lam=0
@@ -487,17 +522,19 @@ void eig_dcm(float8 A, float D[3], float3 V[3])
 }
 
 //derivative of A in direction of dA where A = VDV^T, Jodlbauer2020, dA arrives transposed
-void eig_drv(float3 dA[3], float D[3], float3 V[3])
+void eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2)
 {
-    //L = (A - lam_i*I)
+    //L = (A - D[i]*I)
     
     //derivs, per eig
     float  dD[3];
     float3 dV[3];
     
-    //split
-    float dD_pos[3];
-    float dD_neg[3];
+    //split (1=pos, 2=neg)
+    float dD1[3];
+    float dD2[3];
+    float D1[3];
+    float D2[3];
     
     //loop eigs
     for(int i=0; i<3; i++)
@@ -520,10 +557,24 @@ void eig_drv(float3 dA[3], float D[3], float3 V[3])
         dD[i] = dot(V[i], mtx_mv(dA, V[i]));
         
         //split
-        dD_pos[i] = (D[i]>0e0f)?dD[i]:0e0f;
-        dD_neg[i] = (D[i]<0e0f)?dD[i]:0e0f;
+        dD1[i] = (D[i]>0e0f)?dD[i]:0e0f;
+        dD2[i] = (D[i]<0e0f)?dD[i]:0e0f;
+        
+        D1[i] = (D[i]>0e0f)?D[i]:0e0f;
+        D2[i] = (D[i]<0e0f)?D[i]:0e0f;
         
     }//i
+    
+    //A_pos = VD_posV^T
+    
+    float3 M1[3]; //dV*D_pos*V^T
+    float3 M2[3]; //dV*D_neg*V^T
+    mtx_mdmT(dV,D1,V,M1);
+    mtx_mdmT(dV,D2,V,M2);
+    
+    //finally, A1/A2, pos/neg
+    A1 = sym_sumT(M1) + sym_mdmT(V,dD1);
+    A2 = sym_sumT(M2) + sym_mdmT(V,dD2);
     
     return;
 }
@@ -715,6 +766,7 @@ kernel void vtx_assm(const int3     vtx_dim,
                 eig_dcm(Eh, D, V);
                 
                 
+                //void eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2)
                 
                 
                 //rhs c

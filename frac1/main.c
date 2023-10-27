@@ -19,6 +19,8 @@ int main(int argc, const char * argv[])
 {
     printf("hello\n");
     
+    
+    
     //objects
     struct msh_obj msh;
     struct ocl_obj ocl;
@@ -60,8 +62,8 @@ int main(int argc, const char * argv[])
 //    memset(ocl.hst.U1c, 0, 1*msh.nv_tot*sizeof(float));
     
     //solve
-    slv_u(&msh, &ocl);
-    slv_c(&msh, &ocl);
+//    slv_u(&msh, &ocl);
+//    slv_c(&msh, &ocl);
     
     //write to device
     ocl.err = clEnqueueWriteBuffer(ocl.command_queue, ocl.dev.U1u, CL_TRUE, 0, 3*msh.nv_tot*sizeof(float), ocl.hst.U1u, 0, NULL, NULL);
