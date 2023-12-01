@@ -768,7 +768,6 @@ kernel void vtx_assm(const int3     vtx_dim,
                 
                 //void eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2)
                 
-                
                 //rhs c
                 int idx_c = vtx1_idx1;
                 F1c[idx_c] += prb_f(qp_glb)*bas_ee[vtx1_idx2]*qw;
