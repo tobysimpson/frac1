@@ -292,7 +292,6 @@ void ocl_final(struct ocl_obj *ocl)
     ocl->err = clReleaseKernel(ocl->vtx_err1);
     ocl->err = clReleaseKernel(ocl->fac_bnd1);
     
-
     //device
     ocl->err = clReleaseMemObject(ocl->dev.vtx_xx);
     

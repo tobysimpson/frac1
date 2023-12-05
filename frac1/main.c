@@ -14,12 +14,13 @@
 #include "slv.h"
 #include "io.h"
 
+//for later
+//clSetKernelArg(myKernel, 0, sizeof(cl_int), &myVariable).
+
 //here
 int main(int argc, const char * argv[])
 {
     printf("hello\n");
-    
-    
     
     //objects
     struct msh_obj msh;
@@ -58,10 +59,10 @@ int main(int argc, const char * argv[])
     ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Jcc.vv, CL_TRUE, 0, 27*1*msh.nv_tot*sizeof(float), ocl.hst.Jcc.vv, 0, NULL, NULL);
     
     //reset
-//    memset(ocl.hst.U1u, 0, 3*msh.nv_tot*sizeof(float));
-//    memset(ocl.hst.U1c, 0, 1*msh.nv_tot*sizeof(float));
+    memset(ocl.hst.U1u, 0, 3*msh.nv_tot*sizeof(float));
+    memset(ocl.hst.U1c, 0, 1*msh.nv_tot*sizeof(float));
     
-    //solve
+//    //solve
 //    slv_u(&msh, &ocl);
 //    slv_c(&msh, &ocl);
     

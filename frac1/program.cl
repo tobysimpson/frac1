@@ -567,8 +567,8 @@ void eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2)
     
     //A_pos = VD_posV^T
     
-    float3 M1[3]; //dV*D_pos*V^T
-    float3 M2[3]; //dV*D_neg*V^T
+    float3 M1[3];               //dV*D_pos*V^T
+    float3 M2[3];               //dV*D_neg*V^T
     mtx_mdmT(dV,D1,V,M1);
     mtx_mdmT(dV,D2,V,M2);
     
@@ -751,11 +751,11 @@ kernel void vtx_assm(const int3     vtx_dim,
                 bas_grad(qp, bas_gg, dx);
                 
                 //interp
-                float3 du[3] = {{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f}};
-                bas_itpg(uu2, bas_gg, du);
+                float3 duh[3] = {{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f}};
+                bas_itpg(uu2, bas_gg, duh);
                 
                 //strain
-                float8 Eh = mec_E(du);
+                float8 Eh = mec_E(duh);
                 
                 //test trace tr(e(u)) > 0 for later
                 float trEh = (sym_tr(Eh)>0e0f);
@@ -765,23 +765,9 @@ kernel void vtx_assm(const int3     vtx_dim,
                 float3 V[3];
                 eig_dcm(Eh, D, V);
                 
+                //eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2)
                 
-                //void eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2)
-                
-                //rhs c
-                int idx_c = vtx1_idx1;
-                F1c[idx_c] += prb_f(qp_glb)*bas_ee[vtx1_idx2]*qw;
-                
-                //gravity
-                float b[3] = {0e0f, 0e0f, -mat_g*mat_rho};
-                
-                //rhs u
-                for(int dim1=0; dim1<3; dim1++)
-                {
-                    //write
-                    int idx_u = 3*vtx1_idx1 + dim1;
-                    F1u[idx_u] += bas_ee[vtx1_idx2]*b[dim1]*qw;
-                }
+
                 
                 //vtx2
                 for(int vtx2_idx2=0; vtx2_idx2<8; vtx2_idx2++)
@@ -789,13 +775,7 @@ kernel void vtx_assm(const int3     vtx_dim,
                     int3 vtx2_pos3 = ele1_pos2 + off2[vtx2_idx2];
                     int  vtx2_idx3 = fn_idx3(vtx2_pos3);
                     
-                    //dots
-//                    float dot_e = bas_ee[vtx1_idx2]*bas_ee[vtx2_idx2];
-                    float dot_g = dot(bas_gg[vtx1_idx2], bas_gg[vtx2_idx2]);
-                    
-                    //cc
-                    int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
-                    Jcc_vv[idx_cc] += dot_g*qw;
+
                     
                     //dim1
                     for(int dim1=0; dim1<3; dim1++)
@@ -807,7 +787,6 @@ kernel void vtx_assm(const int3     vtx_dim,
                         //strain
                         float8 E1 = mec_E(du1);
                         
-
                         //dim2
                         for(int dim2=0; dim2<3; dim2++)
                         {
@@ -819,11 +798,11 @@ kernel void vtx_assm(const int3     vtx_dim,
                             float8 E2 = mec_E(du2);
                             
                             //stress
-                            float8 S2 = mec_S(E2, mat_prm);
+//                            float8 S2 = mec_S(E2, mat_prm);
  
                             //uu
                             int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
-                            Juu_vv[idx_uu] += sym_tip(E1, S2)*qw;
+//                            Juu_vv[idx_uu] += sym_tip(E1, S2)*qw;
                             
                         } //dim2
                         
