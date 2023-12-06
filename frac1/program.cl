@@ -64,7 +64,7 @@ void    mem_lr2f3(float3 uu3[27], float3 uu2[8], int3 pos);
 void    eig_val(float8 A, float dd[3]);
 void    eig_vec(float8 A, float dd[3], float3 vv[3]);
 void    eig_dcm(float8 A, float dd[3], float3 vv[3]);
-void    eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2);
+void    eig_drv(float8 dA, float D[3], float3 V[3], float8 A1, float8 A2);
 
 
 /*
@@ -158,7 +158,7 @@ constant float qw3[3] = {0.277777777777778f,0.444444444444444f,0.277777777777778
  ===================================
  */
 
-//eval
+//eval at qp
 void bas_eval(float3 p, float ee[8])
 {
     float x0 = 1e0f - p.x;
@@ -181,7 +181,7 @@ void bas_eval(float3 p, float ee[8])
     return;
 }
 
-//grad
+//grad at qp
 void bas_grad(float3 p, float3 gg[8], float3 dx)
 {
     float x0 = 1e0f - p.x;
@@ -522,7 +522,7 @@ void eig_dcm(float8 A, float D[3], float3 V[3])
 }
 
 //derivative of A in direction of dA where A = VDV^T, Jodlbauer2020, dA arrives transposed
-void eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2)
+void eig_drv(float8 dA, float D[3], float3 V[3], float8 S1, float8 S2)
 {
     //L = (A - D[i]*I)
     
@@ -539,22 +539,18 @@ void eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2)
     //loop eigs
     for(int i=0; i<3; i++)
     {
-        //D inverse
-        float  D[3];
-        D[0] = (D[0]==D[i])?0e0f:1e0f/(D[0]-D[i]);
-        D[1] = (D[1]==D[i])?0e0f:1e0f/(D[1]-D[i]);
-        D[2] = (D[2]==D[i])?0e0f:1e0f/(D[2]-D[i]);
+        //Dinv inverse
+        float  Dinv[3];
+        Dinv[0] = (D[0]==D[i])?0e0f:1e0f/(D[0]-D[i]);
+        Dinv[1] = (D[1]==D[i])?0e0f:1e0f/(D[1]-D[i]);
+        Dinv[2] = (D[2]==D[i])?0e0f:1e0f/(D[2]-D[i]);
         
         //L inverse
-        float3 L[3];
-        mtx_mdmT(V,D,V,L);
-        
-        float3 LdA[3];
-        mtx_mmT(L, dA, LdA); //because dA arrives as rows
+        float8 Linv = sym_mdmT(V,Dinv);
         
         //derivs
-        dV[i] = -mtx_mv(LdA, V[i]);
-        dD[i] = dot(V[i], mtx_mv(dA, V[i]));
+        dV[i] = -sym_mv(sym_mm(Linv, dA), V[i]);
+        dD[i] = dot(V[i], sym_mv(dA, V[i]));
         
         //split
         dD1[i] = (D[i]>0e0f)?dD[i]:0e0f;
@@ -572,9 +568,9 @@ void eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2)
     mtx_mdmT(dV,D1,V,M1);
     mtx_mdmT(dV,D2,V,M2);
     
-    //finally, A1/A2, pos/neg
-    A1 = sym_sumT(M1) + sym_mdmT(V,dD1);
-    A2 = sym_sumT(M2) + sym_mdmT(V,dD2);
+    //finally, S1/S2, pos/neg
+    S1 = sym_sumT(M1) + sym_mdmT(V,dD1);
+    S2 = sym_sumT(M2) + sym_mdmT(V,dD2);
     
     return;
 }
@@ -703,7 +699,9 @@ kernel void vtx_assm(const int3     vtx_dim,
     float vlm = dx.x*dx.y*dx.z;
     
     //read
+    float  cc3[27];
     float3 uu3[27];
+    mem_gr3f(U1c, cc3, vtx1_pos1, vtx_dim);
     mem_gr3f3(U1u, uu3, vtx1_pos1, vtx_dim);
     
     //ref - avoids -ve int bug
@@ -723,7 +721,9 @@ kernel void vtx_assm(const int3     vtx_dim,
         if(ele1_bnd1)
         {
             //read
+            float  cc2[8];
             float3 uu2[8];
+            mem_lr2f(cc3, cc2, ele1_pos2);
             mem_lr2f3(uu3, uu2, ele1_pos2);
             
             //qpt1 (change limit with scheme 1,8,27)
@@ -742,7 +742,7 @@ kernel void vtx_assm(const int3     vtx_dim,
 //                float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
                 
                 //qp global
-                float3 qp_glb = x0 + dx*(convert_float3(ele1_pos1) + qp);
+//                float3 qp_glb = x0 + dx*(convert_float3(ele1_pos1) + qp);
                 
                 //basis
                 float  bas_ee[8];
@@ -754,10 +754,13 @@ kernel void vtx_assm(const int3     vtx_dim,
                 float3 duh[3] = {{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f}};
                 bas_itpg(uu2, bas_gg, duh);
                 
+                float ch = bas_itpe(cc2, bas_ee);
+                float c1 = pown(1e0f - ch, 2);
+                
                 //strain
                 float8 Eh = mec_E(duh);
                 
-                //test trace tr(e(u)) > 0 for later
+                //trace for test later
                 float trEh = (sym_tr(Eh)>0e0f);
                 
                 //decompose Eh
@@ -765,17 +768,13 @@ kernel void vtx_assm(const int3     vtx_dim,
                 float3 V[3];
                 eig_dcm(Eh, D, V);
                 
-                //eig_drv(float3 dA[3], float D[3], float3 V[3], float8 A1, float8 A2)
-                
-
                 
                 //vtx2
                 for(int vtx2_idx2=0; vtx2_idx2<8; vtx2_idx2++)
                 {
+                    //idx
                     int3 vtx2_pos3 = ele1_pos2 + off2[vtx2_idx2];
                     int  vtx2_idx3 = fn_idx3(vtx2_pos3);
-                    
-
                     
                     //dim1
                     for(int dim1=0; dim1<3; dim1++)
@@ -796,13 +795,27 @@ kernel void vtx_assm(const int3     vtx_dim,
                             
                             //strain
                             float8 E2 = mec_E(du2);
+                            float trE2 = sym_tr(E2);
                             
-                            //stress
-//                            float8 S2 = mec_S(E2, mat_prm);
- 
-                            //uu
+                            //split stress
+                            float8 S1;
+                            float8 S2;
+                            
+                            //split (strain)
+                            eig_drv(E2, D, V, S1, S2);
+                            
+                            //stress (lam*tr(E)I + 2*mu*E, pos/neg)
+                            S1 = 2e0f*mat_prm.w*S1;
+                            S1.s035 += mat_prm.z*(trEh>0e0f)*(trE2);
+                            
+                            S2 = 2e0f*mat_prm.w*S2;
+                            S2.s035 += mat_prm.z*(trEh<0e0f)*(trE2);
+                            
+                            //idx
                             int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
-//                            Juu_vv[idx_uu] += sym_tip(E1, S2)*qw;
+                            
+                            //dot & write
+                            Juu_vv[idx_uu] += (c1*sym_tip(S1, E1) + sym_tip(S2, E1))*qw;
                             
                         } //dim2
                         
