@@ -593,8 +593,6 @@ kernel void vtx_init(const  int3    vtx_dim,
                      global float  *F1u,
                      global float  *U1c,
                      global float  *F1c,
-                     global float  *A1c,
-                     global float  *E1c,
                      global int    *Juu_ii,
                      global int    *Juu_jj,
                      global float  *Juu_vv,
@@ -614,18 +612,16 @@ kernel void vtx_init(const  int3    vtx_dim,
     
     //c
     int idx_c = vtx1_idx1;
-    U1c[idx_c] = 0e0f;
-    F1c[idx_c] = 0e0f;
-    A1c[idx_c] = prb_a(x);
-    E1c[idx_c] = 0e0f;
+    U1c[idx_c] = 5e-1f;
+    F1c[idx_c] = 1e0f;
     
     //u
     for(int dim1=0; dim1<3; dim1++)
     {
         //u
         int idx_u = 3*vtx1_idx1 + dim1;
-        U1u[idx_u] = 0e0f;
-        F1u[idx_u] = 0e0f;
+        U1u[idx_u] = 1e0f;
+        F1u[idx_u] = 1e0f;
     }
     
     //vtx2
@@ -661,7 +657,7 @@ kernel void vtx_init(const  int3    vtx_dim,
             //dim2
             for(int dim2=0; dim2<3; dim2++)
             {
-                //cc
+                //uu
                 int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
                 Juu_ii[idx_uu] = vtx2_bnd1*(3*vtx1_idx1 + dim1);
                 Juu_jj[idx_uu] = vtx2_bnd1*(3*vtx2_idx1 + dim2);
@@ -678,25 +674,24 @@ kernel void vtx_init(const  int3    vtx_dim,
 
 
 //assemble
-kernel void vtx_assm(const int3     vtx_dim,
-                     const float3   x0,
-                     const float3   dx,
-                     const float4   mat_prm,
-                     global float  *U1u,
-                     global float  *F1u,
-                     global float  *U1c,
-                     global float  *F1c,
-                     global float  *Juu_vv,
-                     global float  *Jcc_vv)
+kernel void vtx_assm(const  int3     vtx_dim,
+                     const  float3   dx,
+                     const  float4   mat_prm,
+                     global float   *U1u,
+                     global float   *F1u,
+                     global float   *U1c,
+                     global float   *F1c,
+                     global float   *Juu_vv,
+                     global float   *Jcc_vv)
 {
     int3 ele_dim = vtx_dim - 1;
     int3 vtx1_pos1  = {get_global_id(0)  ,get_global_id(1)  ,get_global_id(2)};
     int  vtx1_idx1 = fn_idx1(vtx1_pos1, vtx_dim);
     
-//    printf("vtx1 %+v3d\n", vtx1_pos1);
-
     //volume
     float vlm = dx.x*dx.y*dx.z;
+    
+//    printf("vtx1 %3d %v3d %e\n", vtx1_idx1, vtx1_pos1, vlm);
     
     //read
     float  cc3[27];
@@ -741,9 +736,6 @@ kernel void vtx_assm(const int3     vtx_dim,
 //                float3 qp = (float3){qp3[off3[qpt1].x], qp3[off3[qpt1].y], qp3[off3[qpt1].z]};
 //                float  qw = qw3[off3[qpt1].x]*qw3[off3[qpt1].y]*qw3[off3[qpt1].z]*vlm;
                 
-                //qp global
-//                float3 qp_glb = x0 + dx*(convert_float3(ele1_pos1) + qp);
-                
                 //basis
                 float  bas_ee[8];
                 float3 bas_gg[8];
@@ -759,9 +751,7 @@ kernel void vtx_assm(const int3     vtx_dim,
                 
                 //strain
                 float8 Eh = mec_E(duh);
-                
-                //trace for test later
-                float trEh = (sym_tr(Eh)>0e0f);
+                float trEh = sym_tr(Eh);
                 
                 //decompose Eh
                 float  D[3];
@@ -775,6 +765,12 @@ kernel void vtx_assm(const int3     vtx_dim,
                     //idx
                     int3 vtx2_pos3 = ele1_pos2 + off2[vtx2_idx2];
                     int  vtx2_idx3 = fn_idx3(vtx2_pos3);
+                    
+                    //idx
+                    int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
+                    
+                    //cc write
+                    Jcc_vv[idx_cc] += qw;
                     
                     //dim1
                     for(int dim1=0; dim1<3; dim1++)
@@ -811,10 +807,11 @@ kernel void vtx_assm(const int3     vtx_dim,
                             S2 = 2e0f*mat_prm.w*S2;
                             S2.s035 += mat_prm.z*(trEh<0e0f)*(trE2);
                             
-                            //idx
+                            //uu
                             int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
                             
-                            //dot & write
+                            //write
+//                            Juu_vv[idx_uu] += qw;
                             Juu_vv[idx_uu] += (c1*sym_tip(S1, E1) + sym_tip(S2, E1))*qw;
                             
                         } //dim2

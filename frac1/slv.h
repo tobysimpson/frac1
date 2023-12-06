@@ -127,27 +127,6 @@ int slv_c(struct msh_obj *msh, struct ocl_obj *ocl)
 }
 
 
-void err_nrm(struct msh_obj *msh, struct ocl_obj *ocl)
-{
-    float e_max = ocl->hst.E1c[0];
-    
-    //sum
-    for(int i=0; i<msh->ne_tot; i++)
-    {
-        float e = ocl->hst.E1c[i];
-        
-        e_max = (e>e_max)?e:e_max;
-        
-//        printf("%03d %e %e\n", i, e, e_max);
-    }
-    printf("\n");
-
-    //disp
-    printf("%03d %e %e\n", msh->ele_dim.x, msh->dx.x, e_max);
-    
-    return;
-}
-
 
 #endif /* slv_h */
 

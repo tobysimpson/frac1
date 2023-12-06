@@ -130,36 +130,7 @@ void wrt_vtk(struct msh_obj *msh, struct ocl_obj *ocl)
         fprintf(file1, "%e\n", ocl->hst.F1c[i]);
     }
     
-    /*
-     ===================
-     ac
-     ===================
-     */
     
-
-    fprintf(file1,"SCALARS A1c float 1\n");
-    fprintf(file1,"LOOKUP_TABLE default\n");
-    
-    for(int i=0; i<msh->nv_tot; i++)
-    {
-        fprintf(file1, "%e\n", ocl->hst.A1c[i]);
-    }
-    
-    /*
-     ===================
-     ac
-     ===================
-     */
-    
-
-    fprintf(file1,"SCALARS E1c float 1\n");
-    fprintf(file1,"LOOKUP_TABLE default\n");
-    
-    for(int i=0; i<msh->nv_tot; i++)
-    {
-        fprintf(file1, "%e\n", ocl->hst.E1c[i]);
-    }
-
     //clean up
     fclose(file1);
 

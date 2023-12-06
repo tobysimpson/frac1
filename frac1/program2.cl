@@ -363,7 +363,7 @@ kernel void vtx_init(const  int3    vtx_dim,
     
     //c
     int idx_c = vtx1_idx1;
-    U1c[idx_c] = 0e0f;
+    U1c[idx_c] = 1e0f;
     F1c[idx_c] = 0e0f;
     A1c[idx_c] = prb_a(x);
     E1c[idx_c] = 0e0f;
@@ -390,7 +390,7 @@ kernel void vtx_init(const  int3    vtx_dim,
         int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
         Jcc_ii[idx_cc] = vtx2_bnd1*vtx1_idx1;
         Jcc_jj[idx_cc] = vtx2_bnd1*vtx2_idx1;
-        Jcc_vv[idx_cc] = 0e0f;
+        Jcc_vv[idx_cc] = 1e0f;
         
         //dim1
         for(int dim1=0; dim1<3; dim1++)
