@@ -71,12 +71,6 @@ int main(int argc, const char * argv[])
     //store prior
 //    ocl.err = clEnqueueCopyBuffer( ocl.command_queue, ocl.dev.U1c, ocl.dev.U0c, 0, 0, 1*msh.nv_tot*sizeof(float), 0, NULL, NULL);
     
-    //calc error
-//    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_err1, 3, NULL, nv, NULL, 0, NULL, NULL);
-    
-    //read from device
-//    ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.E1c, CL_TRUE, 0, 1*msh.nv_tot*sizeof(float), ocl.hst.E1c, 0, NULL, NULL);
-    
     
     //write vtk
     wrt_vtk(&msh, &ocl);
@@ -95,9 +89,7 @@ int main(int argc, const char * argv[])
     
     wrt_raw(ocl.hst.U1c, 1*msh.nv_tot, sizeof(float), "U1c");
     wrt_raw(ocl.hst.F1c, 1*msh.nv_tot, sizeof(float), "F1c");
-//    wrt_raw(ocl.hst.A1c, 1*msh.nv_tot, sizeof(float), "A1c");
-//    wrt_raw(ocl.hst.E1c, 1*msh.nv_tot, sizeof(float), "E1c");
-    
+
     //clean
     ocl_final(&ocl);
     

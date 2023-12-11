@@ -758,7 +758,6 @@ kernel void vtx_assm(const  int3     vtx_dim,
                 float3 V[3];
                 eig_dcm(Eh, D, V);
                 
-                
                 //vtx2
                 for(int vtx2_idx2=0; vtx2_idx2<8; vtx2_idx2++)
                 {
@@ -770,7 +769,7 @@ kernel void vtx_assm(const  int3     vtx_dim,
                     int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
                     
                     //cc write
-                    Jcc_vv[idx_cc] += qw;
+                    Jcc_vv[idx_cc] += dot(bas_gg[vtx1_idx2], bas_gg[vtx2_idx2])*qw;
                     
                     //dim1
                     for(int dim1=0; dim1<3; dim1++)
