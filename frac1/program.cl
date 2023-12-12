@@ -793,8 +793,8 @@ kernel void vtx_assm(const  int3     vtx_dim,
                             float trE2 = sym_tr(E2);
                             
                             //split stress
-                            float8 S1;
-                            float8 S2;
+                            float8 S1 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
+                            float8 S2 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
                             
                             //split (strain)
                             eig_drv(E2, D, V, S1, S2);
