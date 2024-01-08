@@ -19,7 +19,7 @@ struct msh_obj
     cl_float3   x1;
     cl_float3   dx;
     
-    cl_float4   mat_prm;
+    cl_float8   mat_prm;
     
     int         ne_tot;     //totals
     int         nv_tot;
@@ -29,7 +29,7 @@ struct msh_obj
 void msh_init(struct msh_obj *msh)
 {
     //dim
-    msh->ele_dim.x = 2;
+    msh->ele_dim.x = 4;
     msh->ele_dim.y = msh->ele_dim.x;
     msh->ele_dim.z = msh->ele_dim.x;
     
@@ -48,13 +48,19 @@ void msh_init(struct msh_obj *msh)
     printf("x1 %+e %+e %+e\n", msh->x1.x, msh->x1.y, msh->x1.z);
     printf("dx %+e %+e %+e\n", msh->dx.x, msh->dx.y, msh->dx.z);
     
-    //material
-    msh->mat_prm.x = 2e-1f;                                                                                 //youngs    E
-    msh->mat_prm.y = 0.25f;                                                                                 //poisson   v
-    msh->mat_prm.z = (msh->mat_prm.x*msh->mat_prm.y)/((1e0f+msh->mat_prm.y)*(1e0f-2e0f*msh->mat_prm.y));    //lamé      lambda
-    msh->mat_prm.w = msh->mat_prm.x/(2e0f*(1e0f+msh->mat_prm.y));                                           //lamé      mu
+    //material params
+    msh->mat_prm.s0 = 2e-1f;                                                                                    //youngs    E
+    msh->mat_prm.s1 = 0.25f;                                                                                    //poisson   v
+    msh->mat_prm.s2 = (msh->mat_prm.s0*msh->mat_prm.s1)/((1e0f+msh->mat_prm.s1)*(1e0f-2e0f*msh->mat_prm.s1));   //lamé      lambda
+    msh->mat_prm.s3 = msh->mat_prm.s0/(2e0f*(1e0f+msh->mat_prm.s1));                                            //lamé      mu
     
-    printf("mat_prm %e %e %e %e\n", msh->mat_prm.x, msh->mat_prm.y, msh->mat_prm.z, msh->mat_prm.w);
+    msh->mat_prm.s4 = 1e0f;                                 //constant Gc  = energy release?
+    msh->mat_prm.s5 = 1e0f;                                 //constant ls or eps = length scale
+    msh->mat_prm.s6 = msh->mat_prm.s4/msh->mat_prm.s5;      //Gc/ls
+    msh->mat_prm.s7 = msh->mat_prm.s4*msh->mat_prm.s5;      //Gc*ls
+    
+    
+    printf("mat_prm %e %e %e %e\n", msh->mat_prm.s0, msh->mat_prm.s1, msh->mat_prm.z, msh->mat_prm.w);
     
     //totals
     msh->ne_tot = msh->ele_dim.x*msh->ele_dim.y*msh->ele_dim.z;
