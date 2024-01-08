@@ -51,8 +51,8 @@ float8  sym_mdmT(float3 A[3], float D[3]);
 float8  sym_sumT(float3 A[3]);
 float   sym_tip(float8 A, float8 B);
 
-float8  mec_E(float3 g[3]);
-float8  mec_S(float8 E, float4 mat_prm);
+float8  mec_e(float3 g[3]);
+float8  mec_s(float8 E, float4 mat_prm);
 float   mec_p(float8 E, float4 mat_prm);
 
 void    mem_gr3f(global float *buf, float uu3[27], int3 pos, int3 dim);
@@ -444,13 +444,13 @@ float sym_tip(float8 A, float8 B)
  */
 
 //strain (du + du^T)/2
-float8 mec_E(float3 du[3])
+float8 mec_e(float3 du[3])
 {
     return 5e-1f*sym_sumT(du);
 }
 
 //stress pk2 = lam*tr(e)*I + 2*mu*e
-float8 mec_S(float8 E, float4 mat_prm)
+float8 mec_s(float8 E, float4 mat_prm)
 {
     float8 S = 2e0f*mat_prm.w*E;
     S.s035 += mat_prm.z*sym_tr(E);
@@ -742,21 +742,22 @@ kernel void vtx_assm(const  int3     vtx_dim,
                 bas_eval(qp, bas_ee);
                 bas_grad(qp, bas_gg, dx);
                 
-                //interp
-                float3 duh[3] = {{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f}};
-                bas_itpg(uu2, bas_gg, duh);
+                //itp def grad
+                float3 du[3] = {{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f},{0e0f,0e0f,0e0f}};
+                bas_itpg(uu2, bas_gg, du);
                 
-                float ch = bas_itpe(cc2, bas_ee);
-                float c1 = pown(1e0f - ch, 2);
+                //itp crack
+                float c = bas_itpe(cc2, bas_ee);
+                float c1 = pown(1e0f - c, 2);
                 
                 //strain
-                float8 Eh = mec_E(duh);
-                float trEh = sym_tr(Eh);
+                float8 E = mec_e(du);
+                float trE = sym_tr(E);
                 
-                //decompose Eh
+                //decompose E
                 float  D[3];
                 float3 V[3];
-                eig_dcm(Eh, D, V);
+                eig_dcm(E, D, V);
                 
                 //vtx2
                 for(int vtx2_idx2=0; vtx2_idx2<8; vtx2_idx2++)
@@ -779,7 +780,7 @@ kernel void vtx_assm(const  int3     vtx_dim,
                         du1[dim1] = bas_gg[vtx1_idx2];
 
                         //strain
-                        float8 E1 = mec_E(du1);
+                        float8 E1 = mec_e(du1);
                         
                         //dim2
                         for(int dim2=0; dim2<3; dim2++)
@@ -789,7 +790,7 @@ kernel void vtx_assm(const  int3     vtx_dim,
                             du2[dim2] = bas_gg[vtx2_idx2];
                             
                             //strain
-                            float8 E2 = mec_E(du2);
+                            float8 E2 = mec_e(du2);
                             float trE2 = sym_tr(E2);
                             
                             //split stress
@@ -801,10 +802,10 @@ kernel void vtx_assm(const  int3     vtx_dim,
                             
                             //stress (lam*tr(E)I + 2*mu*E, pos/neg)
                             S1 = 2e0f*mat_prm.w*S1;
-                            S1.s035 += mat_prm.z*(trEh>0e0f)*(trE2);
+                            S1.s035 += mat_prm.z*(trE>0e0f)*(trE2);
                             
                             S2 = 2e0f*mat_prm.w*S2;
-                            S2.s035 += mat_prm.z*(trEh<0e0f)*(trE2);
+                            S2.s035 += mat_prm.z*(trE<0e0f)*(trE2);
                             
                             //uu
                             int idx_uu = 27*9*vtx1_idx1 + 9*vtx2_idx3 + 3*dim1 + dim2;
