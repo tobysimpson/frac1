@@ -723,6 +723,7 @@ kernel void vtx_assm(const  int3     vtx_dim,
                      const  float8   mat_prm,
                      global float   *U1u,
                      global float   *F1u,
+                     global float   *U0c,
                      global float   *U1c,
                      global float   *F1c,
                      global float   *Juu_vv,
@@ -738,8 +739,10 @@ kernel void vtx_assm(const  int3     vtx_dim,
 //    printf("vtx1 %3d %v3d %e\n", vtx1_idx1, vtx1_pos1, vlm);
     
     //read
+    float  c03[27]; //prior
     float  cc3[27];
     float3 uu3[27];
+    mem_gr3f(U0c, c03, vtx1_pos1, vtx_dim);
     mem_gr3f(U1c, cc3, vtx1_pos1, vtx_dim);
     mem_gr3f3(U1u, uu3, vtx1_pos1, vtx_dim);
     
@@ -760,8 +763,10 @@ kernel void vtx_assm(const  int3     vtx_dim,
         if(ele1_bnd1)
         {
             //read
+            float  c02[8];  //prev
             float  cc2[8];
             float3 uu2[8];
+            mem_lr2f(c03, c02, ele1_pos2);
             mem_lr2f(cc3, cc2, ele1_pos2);
             mem_lr2f3(uu3, uu2, ele1_pos2);
             
@@ -792,10 +797,11 @@ kernel void vtx_assm(const  int3     vtx_dim,
                 
                 //itp crack
                 float c = bas_itpe(cc2, bas_ee);
+                float c_prev = c - bas_itpe(c02, bas_ee); //for heaviside
                 float c1 = pown(1e0f - c, 2);
                 float c2 = 2e0f*(c - 1e0f);
             
-                //grad c
+                //grad c (itp scalar)
                 float3 dc = cc2[0]*bas_gg[0] + cc2[1]*bas_gg[1] + cc2[2]*bas_gg[2] + cc2[3]*bas_gg[3] + cc2[4]*bas_gg[4] + cc2[5]*bas_gg[5] + cc2[6]*bas_gg[6] + cc2[7]*bas_gg[7];
                 
                 //strain
@@ -817,7 +823,7 @@ kernel void vtx_assm(const  int3     vtx_dim,
                 
                 
                 //rhs c
-                F1c[vtx1_idx1] += ((c2*p1 + mat_prm.s6*c)*bas_ee[vtx1_idx2] + mat_prm.s7*dot(dc, bas_gg[vtx1_idx2]))*qw; //needs Heaviside
+                F1c[vtx1_idx1] += ((c2*p1 + mat_prm.s6*c + mat_prm.s7*(c_prev)*(c_prev<0e0f))*bas_ee[vtx1_idx2] + mat_prm.s4*mat_prm.s5*dot(dc, bas_gg[vtx1_idx2]))*qw;
                 
                 //rhs u
                 for(int dim1=0; dim1<3; dim1++)
@@ -845,7 +851,7 @@ kernel void vtx_assm(const  int3     vtx_dim,
                     int idx_cc = 27*vtx1_idx1 + vtx2_idx3;
                     
                     //cc write
-                    Jcc_vv[idx_cc] += ((2e0f*p1 + mat_prm.s6)*bas_ee[vtx1_idx2]*bas_ee[vtx2_idx2] + mat_prm.s6*dot(bas_gg[vtx1_idx2], bas_gg[vtx2_idx2]))*qw; //needs Heaviside...
+                    Jcc_vv[idx_cc] += ((2e0f*p1 + mat_prm.s6 + mat_prm.s7*(c_prev<0e0f))*bas_ee[vtx1_idx2]*bas_ee[vtx2_idx2] + mat_prm.s4*mat_prm.s5*dot(bas_gg[vtx1_idx2], bas_gg[vtx2_idx2]))*qw;
                     
                     //dim1
                     for(int dim1=0; dim1<3; dim1++)

@@ -57,7 +57,7 @@ void msh_init(struct msh_obj *msh)
     msh->mat_prm.s4 = 1e0f;                                 //constant Gc  = energy release?
     msh->mat_prm.s5 = 1e0f;                                 //constant ls or eps = length scale
     msh->mat_prm.s6 = msh->mat_prm.s4/msh->mat_prm.s5;      //Gc/ls
-    msh->mat_prm.s7 = msh->mat_prm.s4*msh->mat_prm.s5;      //Gc*ls
+    msh->mat_prm.s7 = 1e0f;                                 //gamma
     
     
     printf("mat_prm %e %e %e %e\n", msh->mat_prm.s0, msh->mat_prm.s1, msh->mat_prm.z, msh->mat_prm.w);
