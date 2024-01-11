@@ -67,6 +67,7 @@ struct ocl_obj
     cl_command_queue    command_queue;
     cl_program          program;
     char                device_str[100];
+    cl_event            event;  //for profiling
         
     //memory
     struct mem_hst hst;
@@ -95,7 +96,7 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
     ocl->err            = clGetPlatformIDs(1, &ocl->platform_id, &ocl->num_platforms);                                              //platform
     ocl->err            = clGetDeviceIDs(ocl->platform_id, CL_DEVICE_TYPE_GPU, 1, &ocl->device_id, &ocl->num_devices);              //devices
     ocl->context        = clCreateContext(NULL, ocl->num_devices, &ocl->device_id, NULL, NULL, &ocl->err);                          //context
-    ocl->command_queue  = clCreateCommandQueue(ocl->context, ocl->device_id, 0, &ocl->err);                                         //command queue
+    ocl->command_queue  = clCreateCommandQueue(ocl->context, ocl->device_id, CL_QUEUE_PROFILING_ENABLE, &ocl->err);                 //command queue
     ocl->err            = clGetDeviceInfo(ocl->device_id, CL_DEVICE_NAME, sizeof(ocl->device_str), &ocl->device_str, NULL);         //device info
     
     printf("%s\n", ocl->device_str);
@@ -234,14 +235,15 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
     ocl->err = clSetKernelArg(ocl->vtx_init,  3, sizeof(cl_mem),    (void*)&ocl->dev.vtx_xx);
     ocl->err = clSetKernelArg(ocl->vtx_init,  4, sizeof(cl_mem),    (void*)&ocl->dev.U1u);
     ocl->err = clSetKernelArg(ocl->vtx_init,  5, sizeof(cl_mem),    (void*)&ocl->dev.F1u);
-    ocl->err = clSetKernelArg(ocl->vtx_init,  6, sizeof(cl_mem),    (void*)&ocl->dev.U1c);
-    ocl->err = clSetKernelArg(ocl->vtx_init,  7, sizeof(cl_mem),    (void*)&ocl->dev.F1c);
-    ocl->err = clSetKernelArg(ocl->vtx_init,  8, sizeof(cl_mem),    (void*)&ocl->dev.Juu.ii);
-    ocl->err = clSetKernelArg(ocl->vtx_init,  9, sizeof(cl_mem),    (void*)&ocl->dev.Juu.jj);
-    ocl->err = clSetKernelArg(ocl->vtx_init, 10, sizeof(cl_mem),    (void*)&ocl->dev.Juu.vv);
-    ocl->err = clSetKernelArg(ocl->vtx_init, 11, sizeof(cl_mem),    (void*)&ocl->dev.Jcc.ii);
-    ocl->err = clSetKernelArg(ocl->vtx_init, 12, sizeof(cl_mem),    (void*)&ocl->dev.Jcc.jj);
-    ocl->err = clSetKernelArg(ocl->vtx_init, 13, sizeof(cl_mem),    (void*)&ocl->dev.Jcc.vv);
+    ocl->err = clSetKernelArg(ocl->vtx_init,  6, sizeof(cl_mem),    (void*)&ocl->dev.U0c);
+    ocl->err = clSetKernelArg(ocl->vtx_init,  7, sizeof(cl_mem),    (void*)&ocl->dev.U1c);
+    ocl->err = clSetKernelArg(ocl->vtx_init,  8, sizeof(cl_mem),    (void*)&ocl->dev.F1c);
+    ocl->err = clSetKernelArg(ocl->vtx_init,  9, sizeof(cl_mem),    (void*)&ocl->dev.Juu.ii);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 10, sizeof(cl_mem),    (void*)&ocl->dev.Juu.jj);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 11, sizeof(cl_mem),    (void*)&ocl->dev.Juu.vv);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 12, sizeof(cl_mem),    (void*)&ocl->dev.Jcc.ii);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 13, sizeof(cl_mem),    (void*)&ocl->dev.Jcc.jj);
+    ocl->err = clSetKernelArg(ocl->vtx_init, 14, sizeof(cl_mem),    (void*)&ocl->dev.Jcc.vv);
     
     ocl->err = clSetKernelArg(ocl->vtx_assm,  0, sizeof(cl_int3),   (void*)&msh->vtx_dim);
     ocl->err = clSetKernelArg(ocl->vtx_assm,  1, sizeof(cl_float3), (void*)&msh->dx);
@@ -274,10 +276,21 @@ void ocl_init(struct msh_obj *msh, struct ocl_obj *ocl)
 
 
 //final
-void ocl_final(struct ocl_obj *ocl)
+void ocl_final(struct msh_obj *msh, struct ocl_obj *ocl)
 {
     ocl->err = clFlush(ocl->command_queue);
     ocl->err = clFinish(ocl->command_queue);
+    
+    //profile
+    cl_ulong time0;
+    cl_ulong time1;
+
+    clGetEventProfilingInfo(ocl->event, CL_PROFILING_COMMAND_START, sizeof(time0), &time0, NULL);
+    clGetEventProfilingInfo(ocl->event, CL_PROFILING_COMMAND_END,   sizeof(time1), &time1, NULL);
+
+    double nanoSeconds = time1-time0;
+    printf("nv, time(ms)\n");
+    printf("%07d, %0.4f;\n", msh->nv_tot, nanoSeconds/1000000.0);
 
     //kernels
     ocl->err = clReleaseKernel(ocl->vtx_init);

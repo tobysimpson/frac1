@@ -635,6 +635,7 @@ kernel void vtx_init(const  int3    vtx_dim,
                      global float  *vtx_xx,
                      global float  *U1u,
                      global float  *F1u,
+                     global float  *U0c,
                      global float  *U1c,
                      global float  *F1c,
                      global int    *Juu_ii,
@@ -656,6 +657,7 @@ kernel void vtx_init(const  int3    vtx_dim,
     
     //c
     int idx_c = vtx1_idx1;
+    U0c[idx_c] = 6e-1f;
     U1c[idx_c] = 5e-1f;
     F1c[idx_c] = 1e0f;
     
