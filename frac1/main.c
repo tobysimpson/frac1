@@ -85,7 +85,7 @@ int main(int argc, const char * argv[])
      
     
     //write vtk
-    wrt_vtk(&msh, &ocl);
+//    wrt_vtk(&msh, &ocl);
     
     //write for matlab
     wrt_raw(ocl.hst.Juu.ii, 27*9*msh.nv_tot, sizeof(int),   "Juu_ii");
