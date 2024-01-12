@@ -37,11 +37,14 @@ int main(int argc, const char * argv[])
     //kernels
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_init, 3, NULL, nv, NULL, 0, NULL, NULL);
     ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_assm, 3, NULL, nv, NULL, 0, NULL, &ocl.event);
-//    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_bnd1, 3, NULL, nv, NULL, 0, NULL, NULL); //c
-//    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.fac_bnd1, 2, NULL, f1, NULL, 0, NULL, NULL); //u
     
     //for profiling
     clWaitForEvents(1, &ocl.event);
+    
+//    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.vtx_bnd1, 3, NULL, nv, NULL, 0, NULL, NULL); //c
+//    ocl.err = clEnqueueNDRangeKernel(ocl.command_queue, ocl.fac_bnd1, 2, NULL, f1, NULL, 0, NULL, NULL); //u
+    
+
     
     //read from device
     ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.vtx_xx, CL_TRUE, 0, 3*msh.nv_tot*sizeof(float), ocl.hst.vtx_xx, 0, NULL, NULL);
@@ -56,6 +59,10 @@ int main(int argc, const char * argv[])
     ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Juu.ii, CL_TRUE, 0, 27*9*msh.nv_tot*sizeof(int),   ocl.hst.Juu.ii, 0, NULL, NULL);
     ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Juu.jj, CL_TRUE, 0, 27*9*msh.nv_tot*sizeof(int),   ocl.hst.Juu.jj, 0, NULL, NULL);
     ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Juu.vv, CL_TRUE, 0, 27*9*msh.nv_tot*sizeof(float), ocl.hst.Juu.vv, 0, NULL, NULL);
+    
+    ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Juc.ii, CL_TRUE, 0, 27*3*msh.nv_tot*sizeof(int),   ocl.hst.Juc.ii, 0, NULL, NULL);
+    ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Juc.jj, CL_TRUE, 0, 27*3*msh.nv_tot*sizeof(int),   ocl.hst.Juc.jj, 0, NULL, NULL);
+    ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Juc.vv, CL_TRUE, 0, 27*3*msh.nv_tot*sizeof(float), ocl.hst.Juc.vv, 0, NULL, NULL);
     
     ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Jcc.ii, CL_TRUE, 0, 27*1*msh.nv_tot*sizeof(int),   ocl.hst.Jcc.ii, 0, NULL, NULL);
     ocl.err = clEnqueueReadBuffer(ocl.command_queue, ocl.dev.Jcc.jj, CL_TRUE, 0, 27*1*msh.nv_tot*sizeof(int),   ocl.hst.Jcc.jj, 0, NULL, NULL);
@@ -84,6 +91,11 @@ int main(int argc, const char * argv[])
     wrt_raw(ocl.hst.Juu.ii, 27*9*msh.nv_tot, sizeof(int),   "Juu_ii");
     wrt_raw(ocl.hst.Juu.jj, 27*9*msh.nv_tot, sizeof(int),   "Juu_jj");
     wrt_raw(ocl.hst.Juu.vv, 27*9*msh.nv_tot, sizeof(float), "Juu_vv");
+    
+    //write for matlab
+    wrt_raw(ocl.hst.Juc.ii, 27*3*msh.nv_tot, sizeof(int),   "Juc_ii");
+    wrt_raw(ocl.hst.Juc.jj, 27*3*msh.nv_tot, sizeof(int),   "Juc_jj");
+    wrt_raw(ocl.hst.Juc.vv, 27*3*msh.nv_tot, sizeof(float), "Juc_vv");
     
     wrt_raw(ocl.hst.Jcc.ii, 27*1*msh.nv_tot, sizeof(int),   "Jcc_ii");
     wrt_raw(ocl.hst.Jcc.jj, 27*1*msh.nv_tot, sizeof(int),   "Jcc_jj");

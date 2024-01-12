@@ -68,6 +68,7 @@ void    eig_val(float8 A, float dd[3]);
 void    eig_vec(float8 A, float dd[3], float3 vv[3]);
 void    eig_dcm(float8 A, float dd[3], float3 vv[3]);
 void    eig_drv(float8 dA, float D[3], float3 V[3], float8 A1, float8 A2);
+float   eig_dpdu(float D[3], float3 V[3], float3 dU[3], float8 mat_prm);
 
 
 /*
@@ -619,7 +620,17 @@ void eig_drv(float8 dA, float D[3], float3 V[3], float8 S1, float8 S2)
     return;
 }
 
-
+//derivative of energy wrt disp  d(energy+)/du
+float eig_dpdu(float D[3], float3 V[3], float3 dU[3], float8 mat_prm)
+{
+    //derivatives of principal strains wrt perturbation
+    const float dD[3] = {dot(V[0], mtx_mv(dU,V[0])), dot(V[1], mtx_mv(dU,V[1])), dot(V[2], mtx_mv(dU,V[2]))};
+    
+    float trE = (D[0]+D[1]+D[2]);
+    
+    //test pos trace for first part, inidividual eigs (primary strains) for second part
+    return mat_prm.s2*(trE>0e0f)*(dD[0] + dD[1] + dD[2]) + 2e0f*mat_prm.s3*((D[0]>0e0f)*dD[0] + (D[1]>0e0f)*dD[1] + (D[2]>0e0f)*dD[2]);
+}
 
 
 /*
@@ -641,6 +652,9 @@ kernel void vtx_init(const  int3    vtx_dim,
                      global int    *Juu_ii,
                      global int    *Juu_jj,
                      global float  *Juu_vv,
+                     global int    *Juc_ii,
+                     global int    *Juc_jj,
+                     global float  *Juc_vv,
                      global int    *Jcc_ii,
                      global int    *Jcc_jj,
                      global float  *Jcc_vv)
@@ -688,17 +702,11 @@ kernel void vtx_init(const  int3    vtx_dim,
         //dim1
         for(int dim1=0; dim1<3; dim1++)
         {
-//            //uc
-//            int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-//            Juc_ii[idx_uc] = vtx2_bnd1*(3*vtx1_idx1 + dim1);
-//            Juc_jj[idx_uc] = vtx2_bnd1*(vtx2_idx1);
-//            Juc_vv[idx_uc] = 0e0f;
-//
-//            //cu
-//            int idx_cu = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
-//            Jcu_ii[idx_cu] = vtx2_bnd1*(vtx1_idx1);
-//            Jcu_jj[idx_cu] = vtx2_bnd1*(3*vtx2_idx1  + dim1);
-//            Jcu_vv[idx_cu] = 0e0f;
+            //uc
+            int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+            Juc_ii[idx_uc] = vtx2_bnd1*(3*vtx1_idx1 + dim1);
+            Juc_jj[idx_uc] = vtx2_bnd1*(vtx2_idx1);
+            Juc_vv[idx_uc] = 0e0f;
             
             //dim2
             for(int dim2=0; dim2<3; dim2++)
@@ -729,6 +737,7 @@ kernel void vtx_assm(const  int3     vtx_dim,
                      global float   *U1c,
                      global float   *F1c,
                      global float   *Juu_vv,
+                     global float   *Juc_vv,
                      global float   *Jcc_vv)
 {
     int3 ele_dim = vtx_dim - 1;
@@ -741,7 +750,7 @@ kernel void vtx_assm(const  int3     vtx_dim,
 //    printf("vtx1 %3d %v3d %e\n", vtx1_idx1, vtx1_pos1, vlm);
     
     //read
-    float  c03[27]; //prior
+    float  c03[27]; //prev
     float  cc3[27];
     float3 uu3[27];
     mem_gr3f(U0c, c03, vtx1_pos1, vtx_dim);
@@ -823,7 +832,6 @@ kernel void vtx_assm(const  int3     vtx_dim,
                 float8 S2 = (float8){0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f, 0e0f};
                 mec_s12(D, V, mat_prm, S1, S2);
                 
-                
                 //rhs c
                 F1c[vtx1_idx1] += ((c2*p1 + mat_prm.s6*c + mat_prm.s7*(c_prev)*(c_prev<0e0f))*bas_ee[vtx1_idx2] + mat_prm.s4*mat_prm.s5*dot(dc, bas_gg[vtx1_idx2]))*qw;
                 
@@ -840,7 +848,6 @@ kernel void vtx_assm(const  int3     vtx_dim,
                     //write
                     F1u[3*vtx1_idx1 + dim1] += sym_tip(c1*S1 + S2, E1)*qw;
                 }
-                
 
                 //vtx2
                 for(int vtx2_idx2=0; vtx2_idx2<8; vtx2_idx2++)
@@ -864,6 +871,12 @@ kernel void vtx_assm(const  int3     vtx_dim,
 
                         //strain
                         float8 E1 = mec_e(du1);
+                        
+                        //idx
+                        int idx_uc = 27*3*vtx1_idx1 + 3*vtx2_idx3 + dim1;
+                        
+                        //uc write
+                        Juc_vv[idx_uc] += c2*eig_dpdu(D, V, du1, mat_prm)*bas_ee[vtx1_idx2]*qw;
                         
                         //dim2
                         for(int dim2=0; dim2<3; dim2++)
